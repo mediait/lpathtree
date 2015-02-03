@@ -1,51 +1,47 @@
 /*
- * contrib/ltree/_ltree_op.c
+ * contrib/lpathtree/_lpathtree_op.c
  *
  *
- * op function for ltree[]
+ * op function for lpathtree[]
  * Teodor Sigaev <teodor@stack.net>
  */
 #include "postgres.h"
 
 #include <ctype.h>
 
-#include "ltree.h"
+#include "lpathtree.h"
 
-PG_FUNCTION_INFO_V1(_ltree_isparent);
-PG_FUNCTION_INFO_V1(_ltree_r_isparent);
-PG_FUNCTION_INFO_V1(_ltree_risparent);
-PG_FUNCTION_INFO_V1(_ltree_r_risparent);
+PG_FUNCTION_INFO_V1(_lpathtree_isparent);
+PG_FUNCTION_INFO_V1(_lpathtree_r_isparent);
+PG_FUNCTION_INFO_V1(_lpathtree_risparent);
+PG_FUNCTION_INFO_V1(_lpathtree_r_risparent);
 PG_FUNCTION_INFO_V1(_ltq_regex);
 PG_FUNCTION_INFO_V1(_ltq_rregex);
 PG_FUNCTION_INFO_V1(_lt_q_regex);
 PG_FUNCTION_INFO_V1(_lt_q_rregex);
-PG_FUNCTION_INFO_V1(_ltxtq_exec);
-PG_FUNCTION_INFO_V1(_ltxtq_rexec);
 
-Datum		_ltree_r_isparent(PG_FUNCTION_ARGS);
-Datum		_ltree_r_risparent(PG_FUNCTION_ARGS);
+Datum		_lpathtree_r_isparent(PG_FUNCTION_ARGS);
+Datum		_lpathtree_r_risparent(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(_ltree_extract_isparent);
-PG_FUNCTION_INFO_V1(_ltree_extract_risparent);
+PG_FUNCTION_INFO_V1(_lpathtree_extract_isparent);
+PG_FUNCTION_INFO_V1(_lpathtree_extract_risparent);
 PG_FUNCTION_INFO_V1(_ltq_extract_regex);
-PG_FUNCTION_INFO_V1(_ltxtq_extract_exec);
-Datum		_ltree_extract_isparent(PG_FUNCTION_ARGS);
-Datum		_ltree_extract_risparent(PG_FUNCTION_ARGS);
+Datum		_lpathtree_extract_isparent(PG_FUNCTION_ARGS);
+Datum		_lpathtree_extract_risparent(PG_FUNCTION_ARGS);
 Datum		_ltq_extract_regex(PG_FUNCTION_ARGS);
-Datum		_ltxtq_extract_exec(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(_lca);
 Datum		_lca(PG_FUNCTION_ARGS);
 
 typedef Datum (*PGCALL2) (PG_FUNCTION_ARGS);
 
-#define NEXTVAL(x) ( (ltree*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
+#define NEXTVAL(x) ( (lpathtree*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
 
 static bool
-array_iterator(ArrayType *la, PGCALL2 callback, void *param, ltree **found)
+array_iterator(ArrayType *la, PGCALL2 callback, void *param, lpathtree **found)
 {
 	int			num = ArrayGetNItems(ARR_NDIM(la), ARR_DIMS(la));
-	ltree	   *item = (ltree *) ARR_DATA_PTR(la);
+	lpathtree	   *item = (lpathtree *) ARR_DATA_PTR(la);
 
 	if (ARR_NDIM(la) > 1)
 		ereport(ERROR,
@@ -76,11 +72,11 @@ array_iterator(ArrayType *la, PGCALL2 callback, void *param, ltree **found)
 }
 
 Datum
-_ltree_isparent(PG_FUNCTION_ARGS)
+_lpathtree_isparent(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	ltree	   *query = PG_GETARG_LTREE(1);
-	bool		res = array_iterator(la, ltree_isparent, (void *) query, NULL);
+	lpathtree	   *query = PG_GETARG_LPATHTREE(1);
+	bool		res = array_iterator(la, lpathtree_isparent, (void *) query, NULL);
 
 	PG_FREE_IF_COPY(la, 0);
 	PG_FREE_IF_COPY(query, 1);
@@ -88,20 +84,20 @@ _ltree_isparent(PG_FUNCTION_ARGS)
 }
 
 Datum
-_ltree_r_isparent(PG_FUNCTION_ARGS)
+_lpathtree_r_isparent(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_DATUM(DirectFunctionCall2(_ltree_isparent,
+	PG_RETURN_DATUM(DirectFunctionCall2(_lpathtree_isparent,
 										PG_GETARG_DATUM(1),
 										PG_GETARG_DATUM(0)
 										));
 }
 
 Datum
-_ltree_risparent(PG_FUNCTION_ARGS)
+_lpathtree_risparent(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	ltree	   *query = PG_GETARG_LTREE(1);
-	bool		res = array_iterator(la, ltree_risparent, (void *) query, NULL);
+	lpathtree	   *query = PG_GETARG_LPATHTREE(1);
+	bool		res = array_iterator(la, lpathtree_risparent, (void *) query, NULL);
 
 	PG_FREE_IF_COPY(la, 0);
 	PG_FREE_IF_COPY(query, 1);
@@ -109,9 +105,9 @@ _ltree_risparent(PG_FUNCTION_ARGS)
 }
 
 Datum
-_ltree_r_risparent(PG_FUNCTION_ARGS)
+_lpathtree_r_risparent(PG_FUNCTION_ARGS)
 {
-	PG_RETURN_DATUM(DirectFunctionCall2(_ltree_risparent,
+	PG_RETURN_DATUM(DirectFunctionCall2(_lpathtree_risparent,
 										PG_GETARG_DATUM(1),
 										PG_GETARG_DATUM(0)
 										));
@@ -121,7 +117,7 @@ Datum
 _ltq_regex(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	lquery	   *query = PG_GETARG_LQUERY(1);
+	lpathquery	*query = PG_GETARG_LPATHQUERY(1);
 	bool		res = array_iterator(la, ltq_regex, (void *) query, NULL);
 
 	PG_FREE_IF_COPY(la, 0);
@@ -143,7 +139,7 @@ _lt_q_regex(PG_FUNCTION_ARGS)
 {
 	ArrayType  *_tree = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType  *_query = PG_GETARG_ARRAYTYPE_P(1);
-	lquery	   *query = (lquery *) ARR_DATA_PTR(_query);
+	lpathquery *query = (lpathquery *) ARR_DATA_PTR(_query);
 	bool		res = false;
 	int			num = ArrayGetNItems(ARR_NDIM(_query), ARR_DIMS(_query));
 
@@ -164,7 +160,7 @@ _lt_q_regex(PG_FUNCTION_ARGS)
 			break;
 		}
 		num--;
-		query = (lquery *) NEXTVAL(query);
+		query = (lpathquery *) NEXTVAL(query);
 	}
 
 	PG_FREE_IF_COPY(_tree, 0);
@@ -181,45 +177,22 @@ _lt_q_rregex(PG_FUNCTION_ARGS)
 										));
 }
 
-
 Datum
-_ltxtq_exec(PG_FUNCTION_ARGS)
+_lpathtree_extract_isparent(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	ltxtquery  *query = PG_GETARG_LTXTQUERY(1);
-	bool		res = array_iterator(la, ltxtq_exec, (void *) query, NULL);
-
-	PG_FREE_IF_COPY(la, 0);
-	PG_FREE_IF_COPY(query, 1);
-	PG_RETURN_BOOL(res);
-}
-
-Datum
-_ltxtq_rexec(PG_FUNCTION_ARGS)
-{
-	PG_RETURN_DATUM(DirectFunctionCall2(_ltxtq_exec,
-										PG_GETARG_DATUM(1),
-										PG_GETARG_DATUM(0)
-										));
-}
-
-
-Datum
-_ltree_extract_isparent(PG_FUNCTION_ARGS)
-{
-	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	ltree	   *query = PG_GETARG_LTREE(1);
-	ltree	   *found,
+	lpathtree	   *query = PG_GETARG_LPATHTREE(1);
+	lpathtree	   *found,
 			   *item;
 
-	if (!array_iterator(la, ltree_isparent, (void *) query, &found))
+	if (!array_iterator(la, lpathtree_isparent, (void *) query, &found))
 	{
 		PG_FREE_IF_COPY(la, 0);
 		PG_FREE_IF_COPY(query, 1);
 		PG_RETURN_NULL();
 	}
 
-	item = (ltree *) palloc(VARSIZE(found));
+	item = (lpathtree *) palloc(VARSIZE(found));
 	memcpy(item, found, VARSIZE(found));
 
 	PG_FREE_IF_COPY(la, 0);
@@ -228,21 +201,21 @@ _ltree_extract_isparent(PG_FUNCTION_ARGS)
 }
 
 Datum
-_ltree_extract_risparent(PG_FUNCTION_ARGS)
+_lpathtree_extract_risparent(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	ltree	   *query = PG_GETARG_LTREE(1);
-	ltree	   *found,
+	lpathtree	   *query = PG_GETARG_LPATHTREE(1);
+	lpathtree	   *found,
 			   *item;
 
-	if (!array_iterator(la, ltree_risparent, (void *) query, &found))
+	if (!array_iterator(la, lpathtree_risparent, (void *) query, &found))
 	{
 		PG_FREE_IF_COPY(la, 0);
 		PG_FREE_IF_COPY(query, 1);
 		PG_RETURN_NULL();
 	}
 
-	item = (ltree *) palloc(VARSIZE(found));
+	item = (lpathtree *) palloc(VARSIZE(found));
 	memcpy(item, found, VARSIZE(found));
 
 	PG_FREE_IF_COPY(la, 0);
@@ -254,8 +227,8 @@ Datum
 _ltq_extract_regex(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	lquery	   *query = PG_GETARG_LQUERY(1);
-	ltree	   *found,
+	lpathquery *query = PG_GETARG_LPATHQUERY(1);
+	lpathtree	   *found,
 			   *item;
 
 	if (!array_iterator(la, ltq_regex, (void *) query, &found))
@@ -265,30 +238,7 @@ _ltq_extract_regex(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 	}
 
-	item = (ltree *) palloc(VARSIZE(found));
-	memcpy(item, found, VARSIZE(found));
-
-	PG_FREE_IF_COPY(la, 0);
-	PG_FREE_IF_COPY(query, 1);
-	PG_RETURN_POINTER(item);
-}
-
-Datum
-_ltxtq_extract_exec(PG_FUNCTION_ARGS)
-{
-	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
-	ltxtquery  *query = PG_GETARG_LTXTQUERY(1);
-	ltree	   *found,
-			   *item;
-
-	if (!array_iterator(la, ltxtq_exec, (void *) query, &found))
-	{
-		PG_FREE_IF_COPY(la, 0);
-		PG_FREE_IF_COPY(query, 1);
-		PG_RETURN_NULL();
-	}
-
-	item = (ltree *) palloc(VARSIZE(found));
+	item = (lpathtree *) palloc(VARSIZE(found));
 	memcpy(item, found, VARSIZE(found));
 
 	PG_FREE_IF_COPY(la, 0);
@@ -301,8 +251,8 @@ _lca(PG_FUNCTION_ARGS)
 {
 	ArrayType  *la = PG_GETARG_ARRAYTYPE_P(0);
 	int			num = ArrayGetNItems(ARR_NDIM(la), ARR_DIMS(la));
-	ltree	   *item = (ltree *) ARR_DATA_PTR(la);
-	ltree	  **a,
+	lpathtree	   *item = (lpathtree *) ARR_DATA_PTR(la);
+	lpathtree	  **a,
 			   *res;
 
 	if (ARR_NDIM(la) > 1)
@@ -314,7 +264,7 @@ _lca(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("array must not contain nulls")));
 
-	a = (ltree **) palloc(sizeof(ltree *) * num);
+	a = (lpathtree **) palloc(sizeof(lpathtree *) * num);
 	while (num > 0)
 	{
 		num--;

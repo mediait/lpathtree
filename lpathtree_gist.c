@@ -1,78 +1,78 @@
 /*
- * GiST support for ltree
+ * GiST support for lpathtree
  * Teodor Sigaev <teodor@stack.net>
- * contrib/ltree/ltree_gist.c
+ * contrib/lpathtree/lpathtree_gist.c
  */
 #include "postgres.h"
 
 #include "access/gist.h"
 #include "access/skey.h"
 #include "crc32.h"
-#include "ltree.h"
+#include "lpathtree.h"
 
-#define NEXTVAL(x) ( (lquery*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
+#define NEXTVAL(x) ( (lpathquery*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
 
-PG_FUNCTION_INFO_V1(ltree_gist_in);
-Datum		ltree_gist_in(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_gist_in);
+Datum		lpathtree_gist_in(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_gist_out);
-Datum		ltree_gist_out(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_gist_out);
+Datum		lpathtree_gist_out(PG_FUNCTION_ARGS);
 
 Datum
-ltree_gist_in(PG_FUNCTION_ARGS)
+lpathtree_gist_in(PG_FUNCTION_ARGS)
 {
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("ltree_gist_in() not implemented")));
+			 errmsg("lpathtree_gist_in() not implemented")));
 	PG_RETURN_DATUM(0);
 }
 
 Datum
-ltree_gist_out(PG_FUNCTION_ARGS)
+lpathtree_gist_out(PG_FUNCTION_ARGS)
 {
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("ltree_gist_out() not implemented")));
+			 errmsg("lpathtree_gist_out() not implemented")));
 	PG_RETURN_DATUM(0);
 }
 
-PG_FUNCTION_INFO_V1(ltree_compress);
-Datum		ltree_compress(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_compress);
+Datum		lpathtree_compress(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_decompress);
-Datum		ltree_decompress(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_decompress);
+Datum		lpathtree_decompress(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_same);
-Datum		ltree_same(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_same);
+Datum		lpathtree_same(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_union);
-Datum		ltree_union(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_union);
+Datum		lpathtree_union(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_penalty);
-Datum		ltree_penalty(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_penalty);
+Datum		lpathtree_penalty(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_picksplit);
-Datum		ltree_picksplit(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_picksplit);
+Datum		lpathtree_picksplit(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_consistent);
-Datum		ltree_consistent(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_consistent);
+Datum		lpathtree_consistent(PG_FUNCTION_ARGS);
 
-#define ISEQ(a,b)	( (a)->numlevel == (b)->numlevel && ltree_compare(a,b)==0 )
-#define GETENTRY(vec,pos) ((ltree_gist *) DatumGetPointer((vec)->vector[(pos)].key))
+#define ISEQ(a,b)	( (a)->numlevel == (b)->numlevel && lpathtree_compare(a,b)==0 )
+#define GETENTRY(vec,pos) ((lpathtree_gist *) DatumGetPointer((vec)->vector[(pos)].key))
 
 Datum
-ltree_compress(PG_FUNCTION_ARGS)
+lpathtree_compress(PG_FUNCTION_ARGS)
 {
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY  *retval = entry;
 
 	if (entry->leafkey)
-	{							/* ltree */
-		ltree_gist *key;
-		ltree	   *val = (ltree *) DatumGetPointer(PG_DETOAST_DATUM(entry->key));
+	{							/* lpathtree */
+		lpathtree_gist *key;
+		lpathtree	   *val = (lpathtree *) DatumGetPointer(PG_DETOAST_DATUM(entry->key));
 		int32		len = LTG_HDRSIZE + VARSIZE(val);
 
-		key = (ltree_gist *) palloc(len);
+		key = (lpathtree_gist *) palloc(len);
 		SET_VARSIZE(key, len);
 		key->flag = LTG_ONENODE;
 		memcpy((void *) LTG_NODE(key), (void *) val, VARSIZE(val));
@@ -86,10 +86,10 @@ ltree_compress(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_decompress(PG_FUNCTION_ARGS)
+lpathtree_decompress(PG_FUNCTION_ARGS)
 {
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
-	ltree_gist *key = (ltree_gist *) DatumGetPointer(PG_DETOAST_DATUM(entry->key));
+	lpathtree_gist *key = (lpathtree_gist *) DatumGetPointer(PG_DETOAST_DATUM(entry->key));
 
 	if (PointerGetDatum(key) != entry->key)
 	{
@@ -104,10 +104,10 @@ ltree_decompress(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_same(PG_FUNCTION_ARGS)
+lpathtree_same(PG_FUNCTION_ARGS)
 {
-	ltree_gist *a = (ltree_gist *) PG_GETARG_POINTER(0);
-	ltree_gist *b = (ltree_gist *) PG_GETARG_POINTER(1);
+	lpathtree_gist *a = (lpathtree_gist *) PG_GETARG_POINTER(0);
+	lpathtree_gist *b = (lpathtree_gist *) PG_GETARG_POINTER(1);
 	bool	   *result = (bool *) PG_GETARG_POINTER(2);
 
 	*result = false;
@@ -148,15 +148,15 @@ ltree_same(PG_FUNCTION_ARGS)
 }
 
 static void
-hashing(BITVECP sign, ltree *t)
+hashing(BITVECP sign, lpathtree *t)
 {
 	int			tlen = t->numlevel;
-	ltree_level *cur = LTREE_FIRST(t);
+	lpathtree_level *cur = LPATHTREE_FIRST(t);
 	int			hash;
 
 	while (tlen > 0)
 	{
-		hash = ltree_crc32_sz(cur->name, cur->len);
+		hash = lpathtree_crc32_sz(cur->name, cur->len);
 		HASH(sign, hash);
 		cur = LEVEL_NEXT(cur);
 		tlen--;
@@ -164,16 +164,16 @@ hashing(BITVECP sign, ltree *t)
 }
 
 Datum
-ltree_union(PG_FUNCTION_ARGS)
+lpathtree_union(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	int		   *size = (int *) PG_GETARG_POINTER(1);
 	BITVEC		base;
 	int32		i,
 				j;
-	ltree_gist *result,
+	lpathtree_gist *result,
 			   *cur;
-	ltree	   *left = NULL,
+	lpathtree	   *left = NULL,
 			   *right = NULL,
 			   *curtree;
 	bool		isalltrue = false;
@@ -187,9 +187,9 @@ ltree_union(PG_FUNCTION_ARGS)
 		{
 			curtree = LTG_NODE(cur);
 			hashing(base, curtree);
-			if (!left || ltree_compare(left, curtree) > 0)
+			if (!left || lpathtree_compare(left, curtree) > 0)
 				left = curtree;
-			if (!right || ltree_compare(right, curtree) < 0)
+			if (!right || lpathtree_compare(right, curtree) < 0)
 				right = curtree;
 		}
 		else
@@ -205,10 +205,10 @@ ltree_union(PG_FUNCTION_ARGS)
 			}
 
 			curtree = LTG_LNODE(cur);
-			if (!left || ltree_compare(left, curtree) > 0)
+			if (!left || lpathtree_compare(left, curtree) > 0)
 				left = curtree;
 			curtree = LTG_RNODE(cur);
-			if (!right || ltree_compare(right, curtree) < 0)
+			if (!right || lpathtree_compare(right, curtree) < 0)
 				right = curtree;
 		}
 	}
@@ -229,7 +229,7 @@ ltree_union(PG_FUNCTION_ARGS)
 	isleqr = (left == right || ISEQ(left, right)) ? true : false;
 	*size = LTG_HDRSIZE + ((isalltrue) ? 0 : SIGLEN) + VARSIZE(left) + ((isleqr) ? 0 : VARSIZE(right));
 
-	result = (ltree_gist *) palloc(*size);
+	result = (lpathtree_gist *) palloc(*size);
 	SET_VARSIZE(result, *size);
 	result->flag = 0;
 
@@ -248,16 +248,16 @@ ltree_union(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_penalty(PG_FUNCTION_ARGS)
+lpathtree_penalty(PG_FUNCTION_ARGS)
 {
-	ltree_gist *origval = (ltree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(0))->key);
-	ltree_gist *newval = (ltree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(1))->key);
+	lpathtree_gist *origval = (lpathtree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(0))->key);
+	lpathtree_gist *newval = (lpathtree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(1))->key);
 	float	   *penalty = (float *) PG_GETARG_POINTER(2);
 	int32		cmpr,
 				cmpl;
 
-	cmpl = ltree_compare(LTG_GETLNODE(origval), LTG_GETLNODE(newval));
-	cmpr = ltree_compare(LTG_GETRNODE(newval), LTG_GETRNODE(origval));
+	cmpl = lpathtree_compare(LTG_GETLNODE(origval), LTG_GETLNODE(newval));
+	cmpr = lpathtree_compare(LTG_GETRNODE(newval), LTG_GETRNODE(origval));
 
 	*penalty = Max(cmpl, 0) + Max(cmpr, 0);
 
@@ -268,13 +268,13 @@ ltree_penalty(PG_FUNCTION_ARGS)
 typedef struct rix
 {
 	int			index;
-	ltree	   *r;
+	lpathtree	   *r;
 } RIX;
 
 static int
 treekey_cmp(const void *a, const void *b)
 {
-	return ltree_compare(
+	return lpathtree_compare(
 						 ((const RIX *) a)->r,
 						 ((const RIX *) b)->r
 		);
@@ -282,7 +282,7 @@ treekey_cmp(const void *a, const void *b)
 
 
 Datum
-ltree_picksplit(PG_FUNCTION_ARGS)
+lpathtree_picksplit(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
@@ -292,11 +292,11 @@ ltree_picksplit(PG_FUNCTION_ARGS)
 	OffsetNumber maxoff;
 	int			nbytes;
 	int			size;
-	ltree	   *lu_l,
+	lpathtree	   *lu_l,
 			   *lu_r,
 			   *ru_l,
 			   *ru_r;
-	ltree_gist *lu,
+	lpathtree_gist *lu,
 			   *ru;
 	BITVEC		ls,
 				rs;
@@ -333,7 +333,7 @@ ltree_picksplit(PG_FUNCTION_ARGS)
 		{
 			v->spl_left[v->spl_nleft] = array[j].index;
 			v->spl_nleft++;
-			if (lu_r == NULL || ltree_compare(LTG_GETRNODE(lu), lu_r) > 0)
+			if (lu_r == NULL || lpathtree_compare(LTG_GETRNODE(lu), lu_r) > 0)
 				lu_r = LTG_GETRNODE(lu);
 			if (LTG_ISONENODE(lu))
 				hashing(ls, LTG_NODE(lu));
@@ -354,7 +354,7 @@ ltree_picksplit(PG_FUNCTION_ARGS)
 		{
 			v->spl_right[v->spl_nright] = array[j].index;
 			v->spl_nright++;
-			if (ru_r == NULL || ltree_compare(LTG_GETRNODE(lu), ru_r) > 0)
+			if (ru_r == NULL || lpathtree_compare(LTG_GETRNODE(lu), ru_r) > 0)
 				ru_r = LTG_GETRNODE(lu);
 			if (LTG_ISONENODE(lu))
 				hashing(rs, LTG_NODE(lu));
@@ -402,7 +402,7 @@ ltree_picksplit(PG_FUNCTION_ARGS)
 	lu_l = LTG_GETLNODE(GETENTRY(entryvec, array[FirstOffsetNumber].index));
 	isleqr = (lu_l == lu_r || ISEQ(lu_l, lu_r)) ? true : false;
 	size = LTG_HDRSIZE + ((lisat) ? 0 : SIGLEN) + VARSIZE(lu_l) + ((isleqr) ? 0 : VARSIZE(lu_r));
-	lu = (ltree_gist *) palloc(size);
+	lu = (lpathtree_gist *) palloc(size);
 	SET_VARSIZE(lu, size);
 	lu->flag = 0;
 	if (lisat)
@@ -419,7 +419,7 @@ ltree_picksplit(PG_FUNCTION_ARGS)
 	ru_l = LTG_GETLNODE(GETENTRY(entryvec, array[1 + ((maxoff - FirstOffsetNumber + 1) / 2)].index));
 	isleqr = (ru_l == ru_r || ISEQ(ru_l, ru_r)) ? true : false;
 	size = LTG_HDRSIZE + ((risat) ? 0 : SIGLEN) + VARSIZE(ru_l) + ((isleqr) ? 0 : VARSIZE(ru_r));
-	ru = (ltree_gist *) palloc(size);
+	ru = (lpathtree_gist *) palloc(size);
 	SET_VARSIZE(ru, size);
 	ru->flag = 0;
 	if (risat)
@@ -439,7 +439,7 @@ ltree_picksplit(PG_FUNCTION_ARGS)
 }
 
 static bool
-gist_isparent(ltree_gist *key, ltree *query)
+gist_isparent(lpathtree_gist *key, lpathtree *query)
 {
 	int32		numlevel = query->numlevel;
 	int			i;
@@ -447,7 +447,7 @@ gist_isparent(ltree_gist *key, ltree *query)
 	for (i = query->numlevel; i >= 0; i--)
 	{
 		query->numlevel = i;
-		if (ltree_compare(query, LTG_GETLNODE(key)) >= 0 && ltree_compare(query, LTG_GETRNODE(key)) <= 0)
+		if (lpathtree_compare(query, LTG_GETLNODE(key)) >= 0 && lpathtree_compare(query, LTG_GETRNODE(key)) <= 0)
 		{
 			query->numlevel = numlevel;
 			return true;
@@ -458,32 +458,32 @@ gist_isparent(ltree_gist *key, ltree *query)
 	return false;
 }
 
-static ltree *
-copy_ltree(ltree *src)
+static lpathtree *
+copy_lpathtree(lpathtree *src)
 {
-	ltree	   *dst = (ltree *) palloc(VARSIZE(src));
+	lpathtree	   *dst = (lpathtree *) palloc(VARSIZE(src));
 
 	memcpy(dst, src, VARSIZE(src));
 	return dst;
 }
 
 static bool
-gist_ischild(ltree_gist *key, ltree *query)
+gist_ischild(lpathtree_gist *key, lpathtree *query)
 {
-	ltree	   *left = copy_ltree(LTG_GETLNODE(key));
-	ltree	   *right = copy_ltree(LTG_GETRNODE(key));
+	lpathtree	   *left = copy_lpathtree(LTG_GETLNODE(key));
+	lpathtree	   *right = copy_lpathtree(LTG_GETRNODE(key));
 	bool		res = true;
 
 	if (left->numlevel > query->numlevel)
 		left->numlevel = query->numlevel;
 
-	if (ltree_compare(query, left) < 0)
+	if (lpathtree_compare(query, left) < 0)
 		res = false;
 
 	if (right->numlevel > query->numlevel)
 		right->numlevel = query->numlevel;
 
-	if (res && ltree_compare(query, right) > 0)
+	if (res && lpathtree_compare(query, right) > 0)
 		res = false;
 
 	pfree(left);
@@ -493,9 +493,9 @@ gist_ischild(ltree_gist *key, ltree *query)
 }
 
 static bool
-gist_qe(ltree_gist *key, lquery *query)
+gist_qe(lpathtree_gist *key, lpathquery *query)
 {
-	lquery_level *curq = LQUERY_FIRST(query);
+	lpathquery_level *curq = LPATHQUERY_FIRST(query);
 	BITVECP		sign = LTG_SIGN(key);
 	int			qlen = query->numlevel;
 
@@ -508,7 +508,7 @@ gist_qe(ltree_gist *key, lquery *query)
 		{
 			bool		isexist = false;
 			int			vlen = curq->numvar;
-			lquery_variant *curv = LQL_FIRST(curq);
+			lpathquery_variant *curv = LQL_FIRST(curq);
 
 			while (vlen > 0)
 			{
@@ -532,11 +532,11 @@ gist_qe(ltree_gist *key, lquery *query)
 }
 
 static int
-gist_tqcmp(ltree *t, lquery *q)
+gist_tqcmp(lpathtree *t, lpathquery *q)
 {
-	ltree_level *al = LTREE_FIRST(t);
-	lquery_level *ql = LQUERY_FIRST(q);
-	lquery_variant *bl;
+	lpathtree_level *al = LPATHTREE_FIRST(t);
+	lpathquery_level *ql = LPATHQUERY_FIRST(q);
+	lpathquery_variant *bl;
 	int			an = t->numlevel;
 	int			bn = q->firstgood;
 	int			res = 0;
@@ -561,7 +561,7 @@ gist_tqcmp(ltree *t, lquery *q)
 }
 
 static bool
-gist_between(ltree_gist *key, lquery *query)
+gist_between(lpathtree_gist *key, lpathquery *query)
 {
 	if (query->firstgood == 0)
 		return true;
@@ -582,22 +582,9 @@ checkcondition_bit(void *checkval, ITEM *val)
 }
 
 static bool
-gist_qtxt(ltree_gist *key, ltxtquery *query)
+arrq_cons(lpathtree_gist *key, ArrayType *_query)
 {
-	if (LTG_ISALLTRUE(key))
-		return true;
-
-	return ltree_execute(
-						 GETQUERY(query),
-						 (void *) LTG_SIGN(key), false,
-						 checkcondition_bit
-		);
-}
-
-static bool
-arrq_cons(ltree_gist *key, ArrayType *_query)
-{
-	lquery	   *query = (lquery *) ARR_DATA_PTR(_query);
+	lpathquery	*query = (lpathquery *) ARR_DATA_PTR(_query);
 	int			num = ArrayGetNItems(ARR_NDIM(_query), ARR_DIMS(_query));
 
 	if (ARR_NDIM(_query) > 1)
@@ -620,14 +607,14 @@ arrq_cons(ltree_gist *key, ArrayType *_query)
 }
 
 Datum
-ltree_consistent(PG_FUNCTION_ARGS)
+lpathtree_consistent(PG_FUNCTION_ARGS)
 {
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
 
 	/* Oid		subtype = PG_GETARG_OID(3); */
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
-	ltree_gist *key = (ltree_gist *) DatumGetPointer(entry->key);
+	lpathtree_gist *key = (lpathtree_gist *) DatumGetPointer(entry->key);
 	void	   *query = NULL;
 	bool		res = false;
 
@@ -637,76 +624,65 @@ ltree_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case BTLessStrategyNumber:
-			query = PG_GETARG_LTREE(1);
+			query = PG_GETARG_LPATHTREE(1);
 			res = (GIST_LEAF(entry)) ?
-				(ltree_compare((ltree *) query, LTG_NODE(key)) > 0)
+				(lpathtree_compare((lpathtree *) query, LTG_NODE(key)) > 0)
 				:
-				(ltree_compare((ltree *) query, LTG_GETLNODE(key)) >= 0);
+				(lpathtree_compare((lpathtree *) query, LTG_GETLNODE(key)) >= 0);
 			break;
 		case BTLessEqualStrategyNumber:
-			query = PG_GETARG_LTREE(1);
-			res = (ltree_compare((ltree *) query, LTG_GETLNODE(key)) >= 0);
+			query = PG_GETARG_LPATHTREE(1);
+			res = (lpathtree_compare((lpathtree *) query, LTG_GETLNODE(key)) >= 0);
 			break;
 		case BTEqualStrategyNumber:
-			query = PG_GETARG_LTREE(1);
+			query = PG_GETARG_LPATHTREE(1);
 			if (GIST_LEAF(entry))
-				res = (ltree_compare((ltree *) query, LTG_NODE(key)) == 0);
+				res = (lpathtree_compare((lpathtree *) query, LTG_NODE(key)) == 0);
 			else
 				res = (
-					   ltree_compare((ltree *) query, LTG_GETLNODE(key)) >= 0
+					   lpathtree_compare((lpathtree *) query, LTG_GETLNODE(key)) >= 0
 					   &&
-					   ltree_compare((ltree *) query, LTG_GETRNODE(key)) <= 0
+					   lpathtree_compare((lpathtree *) query, LTG_GETRNODE(key)) <= 0
 					);
 			break;
 		case BTGreaterEqualStrategyNumber:
-			query = PG_GETARG_LTREE(1);
-			res = (ltree_compare((ltree *) query, LTG_GETRNODE(key)) <= 0);
+			query = PG_GETARG_LPATHTREE(1);
+			res = (lpathtree_compare((lpathtree *) query, LTG_GETRNODE(key)) <= 0);
 			break;
 		case BTGreaterStrategyNumber:
-			query = PG_GETARG_LTREE(1);
+			query = PG_GETARG_LPATHTREE(1);
 			res = (GIST_LEAF(entry)) ?
-				(ltree_compare((ltree *) query, LTG_GETRNODE(key)) < 0)
+				(lpathtree_compare((lpathtree *) query, LTG_GETRNODE(key)) < 0)
 				:
-				(ltree_compare((ltree *) query, LTG_GETRNODE(key)) <= 0);
+				(lpathtree_compare((lpathtree *) query, LTG_GETRNODE(key)) <= 0);
 			break;
 		case 10:
-			query = PG_GETARG_LTREE_COPY(1);
+			query = PG_GETARG_LPATHTREE_COPY(1);
 			res = (GIST_LEAF(entry)) ?
-				inner_isparent((ltree *) query, LTG_NODE(key))
+				inner_isparent((lpathtree *) query, LTG_NODE(key))
 				:
-				gist_isparent(key, (ltree *) query);
+				gist_isparent(key, (lpathtree *) query);
 			break;
 		case 11:
-			query = PG_GETARG_LTREE(1);
+			query = PG_GETARG_LPATHTREE(1);
 			res = (GIST_LEAF(entry)) ?
-				inner_isparent(LTG_NODE(key), (ltree *) query)
+				inner_isparent(LTG_NODE(key), (lpathtree *) query)
 				:
-				gist_ischild(key, (ltree *) query);
+				gist_ischild(key, (lpathtree *) query);
 			break;
 		case 12:
 		case 13:
-			query = PG_GETARG_LQUERY(1);
+			query = PG_GETARG_LPATHQUERY(1);
 			if (GIST_LEAF(entry))
 				res = DatumGetBool(DirectFunctionCall2(ltq_regex,
 											  PointerGetDatum(LTG_NODE(key)),
-											PointerGetDatum((lquery *) query)
+											PointerGetDatum((lpathquery *) query)
 													   ));
 			else
-				res = (gist_qe(key, (lquery *) query) && gist_between(key, (lquery *) query));
+				res = (gist_qe(key, (lpathquery *) query) && gist_between(key, (lpathquery *) query));
 			break;
 		case 14:
 		case 15:
-			query = PG_GETARG_LQUERY(1);
-			if (GIST_LEAF(entry))
-				res = DatumGetBool(DirectFunctionCall2(ltxtq_exec,
-											  PointerGetDatum(LTG_NODE(key)),
-											PointerGetDatum((lquery *) query)
-													   ));
-			else
-				res = gist_qtxt(key, (ltxtquery *) query);
-			break;
-		case 16:
-		case 17:
 			query = DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(1)));
 			if (GIST_LEAF(entry))
 				res = DatumGetBool(DirectFunctionCall2(lt_q_regex,

@@ -1,7 +1,7 @@
 /*
- * op function for ltree and lquery
+ * op function for lpathtree and lpathquery
  * Teodor Sigaev <teodor@stack.net>
- * contrib/ltree/lquery_op.c
+ * contrib/lpathtree/lpathquery_op.c
  */
 #include "postgres.h"
 
@@ -9,7 +9,7 @@
 
 #include "catalog/pg_collation.h"
 #include "utils/formatting.h"
-#include "ltree.h"
+#include "lpathtree.h"
 
 PG_FUNCTION_INFO_V1(ltq_regex);
 PG_FUNCTION_INFO_V1(ltq_rregex);
@@ -17,13 +17,13 @@ PG_FUNCTION_INFO_V1(ltq_rregex);
 PG_FUNCTION_INFO_V1(lt_q_regex);
 PG_FUNCTION_INFO_V1(lt_q_rregex);
 
-#define NEXTVAL(x) ( (lquery*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
+#define NEXTVAL(x) ( (lpathquery*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
 
 typedef struct
 {
-	lquery_level *q;
+	lpathquery_level *q;
 	int			nq;
-	ltree_level *t;
+	lpathtree_level *t;
 	int			nt;
 	int			posq;
 	int			post;
@@ -50,7 +50,7 @@ getlexeme(char *start, char *end, int *len)
 }
 
 bool
-			compare_subnode(ltree_level *t, char *qn, int len, int (*cmpptr) (const char *, const char *, size_t), bool anyend)
+			compare_subnode(lpathtree_level *t, char *qn, int len, int (*cmpptr) (const char *, const char *, size_t), bool anyend)
 {
 	char	   *endt = t->name + t->len;
 	char	   *endq = qn + len;
@@ -88,7 +88,7 @@ bool
 }
 
 int
-ltree_strncasecmp(const char *a, const char *b, size_t s)
+lpathtree_strncasecmp(const char *a, const char *b, size_t s)
 {
 	char	   *al = str_tolower(a, s, DEFAULT_COLLATION_OID);
 	char	   *bl = str_tolower(b, s, DEFAULT_COLLATION_OID);
@@ -103,15 +103,15 @@ ltree_strncasecmp(const char *a, const char *b, size_t s)
 }
 
 static bool
-checkLevel(lquery_level *curq, ltree_level *curt)
+checkLevel(lpathquery_level *curq, lpathtree_level *curt)
 {
 	int			(*cmpptr) (const char *, const char *, size_t);
-	lquery_variant *curvar = LQL_FIRST(curq);
+	lpathquery_variant *curvar = LQL_FIRST(curq);
 	int			i;
 
 	for (i = 0; i < curq->numvar; i++)
 	{
-		cmpptr = (curvar->flag & LVAR_INCASE) ? ltree_strncasecmp : strncmp;
+		cmpptr = (curvar->flag & LVAR_INCASE) ? lpathtree_strncasecmp : strncmp;
 
 		if (curvar->flag & LVAR_SUBLEXEME)
 		{
@@ -154,7 +154,7 @@ static struct
 };
 
 static bool
-checkCond(lquery_level *curq, int query_numlevel, ltree_level *curt, int tree_numlevel, FieldNot *ptr)
+checkCond(lpathquery_level *curq, int query_numlevel, lpathtree_level *curt, int tree_numlevel, FieldNot *ptr)
 {
 	uint32		low_pos = 0,
 				high_pos = 0,
@@ -162,8 +162,8 @@ checkCond(lquery_level *curq, int query_numlevel, ltree_level *curt, int tree_nu
 	int			tlen = tree_numlevel,
 				qlen = query_numlevel;
 	int			isok;
-	lquery_level *prevq = NULL;
-	ltree_level *prevt = NULL;
+	lpathquery_level *prevq = NULL;
+	lpathtree_level *prevt = NULL;
 
 	if (SomeStack.muse)
 	{
@@ -302,23 +302,23 @@ checkCond(lquery_level *curq, int query_numlevel, ltree_level *curt, int tree_nu
 Datum
 ltq_regex(PG_FUNCTION_ARGS)
 {
-	ltree	   *tree = PG_GETARG_LTREE(0);
-	lquery	   *query = PG_GETARG_LQUERY(1);
+	lpathtree	   *tree = PG_GETARG_LPATHTREE(0);
+	lpathquery	   *query = PG_GETARG_LPATHQUERY(1);
 	bool		res = false;
 
-	if (query->flag & LQUERY_HASNOT)
+	if (query->flag & LPATHQUERY_HASNOT)
 	{
 		FieldNot	fn;
 
 		fn.q = NULL;
 
-		res = checkCond(LQUERY_FIRST(query), query->numlevel,
-						LTREE_FIRST(tree), tree->numlevel, &fn);
+		res = checkCond(LPATHQUERY_FIRST(query), query->numlevel,
+						LPATHTREE_FIRST(tree), tree->numlevel, &fn);
 	}
 	else
 	{
-		res = checkCond(LQUERY_FIRST(query), query->numlevel,
-						LTREE_FIRST(tree), tree->numlevel, NULL);
+		res = checkCond(LPATHQUERY_FIRST(query), query->numlevel,
+						LPATHTREE_FIRST(tree), tree->numlevel, NULL);
 	}
 
 	PG_FREE_IF_COPY(tree, 0);
@@ -338,9 +338,9 @@ ltq_rregex(PG_FUNCTION_ARGS)
 Datum
 lt_q_regex(PG_FUNCTION_ARGS)
 {
-	ltree	   *tree = PG_GETARG_LTREE(0);
+	lpathtree	   *tree = PG_GETARG_LPATHTREE(0);
 	ArrayType  *_query = PG_GETARG_ARRAYTYPE_P(1);
-	lquery	   *query = (lquery *) ARR_DATA_PTR(_query);
+	lpathquery *query = (lpathquery *) ARR_DATA_PTR(_query);
 	bool		res = false;
 	int			num = ArrayGetNItems(ARR_NDIM(_query), ARR_DIMS(_query));
 

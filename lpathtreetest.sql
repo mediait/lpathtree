@@ -1,9 +1,9 @@
-/* contrib/ltree/ltreetest.sql */
+/* contrib/lpathtree/lpathtreetest.sql */
 
 -- Adjust this setting to control where the objects get created.
 SET search_path = public;
 
-CREATE TABLE test ( path ltree);
+CREATE TABLE test ( path lpathtree);
 INSERT INTO test VALUES ('Top');
 INSERT INTO test VALUES ('Top.Science');
 INSERT INTO test VALUES ('Top.Science.Astronomy');

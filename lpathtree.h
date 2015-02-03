@@ -1,7 +1,7 @@
-/* contrib/ltree/ltree.h */
+/* contrib/lpathtree/lpathtree.h */
 
-#ifndef __LTREE_H__
-#define __LTREE_H__
+#ifndef __lpathtree_H__
+#define __lpathtree_H__
 
 #include "fmgr.h"
 #include "tsearch/ts_locale.h"
@@ -13,23 +13,23 @@ typedef struct
 {
 	uint16		len;
 	char		name[1];
-} ltree_level;
+} lpathtree_level;
 
-#define LEVEL_HDRSIZE	(offsetof(ltree_level,name))
-#define LEVEL_NEXT(x)	( (ltree_level*)( ((char*)(x)) + MAXALIGN(((ltree_level*)(x))->len + LEVEL_HDRSIZE) ) )
+#define LEVEL_HDRSIZE	(offsetof(lpathtree_level,name))
+#define LEVEL_NEXT(x)	( (lpathtree_level*)( ((char*)(x)) + MAXALIGN(((lpathtree_level*)(x))->len + LEVEL_HDRSIZE) ) )
 
 typedef struct
 {
 	int32		vl_len_;		/* varlena header (do not touch directly!) */
 	uint16		numlevel;
 	char		data[1];
-} ltree;
+} lpathtree;
 
-#define LTREE_HDRSIZE	MAXALIGN( offsetof(ltree, data) )
-#define LTREE_FIRST(x)	( (ltree_level*)( ((char*)(x))+LTREE_HDRSIZE ) )
+#define lpathtree_HDRSIZE	MAXALIGN( offsetof(lpathtree, data) )
+#define LPATHTREE_FIRST(x)	( (lpathtree_level*)( ((char*)(x))+lpathtree_HDRSIZE ) )
 
 
-/* lquery */
+/* lpathquery */
 
 typedef struct
 {
@@ -37,10 +37,10 @@ typedef struct
 	uint16		len;
 	uint8		flag;
 	char		name[1];
-} lquery_variant;
+} lpathquery_variant;
 
-#define LVAR_HDRSIZE   MAXALIGN(offsetof(lquery_variant, name))
-#define LVAR_NEXT(x)	( (lquery_variant*)( ((char*)(x)) + MAXALIGN(((lquery_variant*)(x))->len) + LVAR_HDRSIZE ) )
+#define LVAR_HDRSIZE   MAXALIGN(offsetof(lpathquery_variant, name))
+#define LVAR_NEXT(x)	( (lpathquery_variant*)( ((char*)(x)) + MAXALIGN(((lpathquery_variant*)(x))->len) + LVAR_HDRSIZE ) )
 
 #define LVAR_ANYEND 0x01
 #define LVAR_INCASE 0x02
@@ -54,11 +54,11 @@ typedef struct
 	uint16		low;
 	uint16		high;
 	char		variants[1];
-} lquery_level;
+} lpathquery_level;
 
-#define LQL_HDRSIZE MAXALIGN( offsetof(lquery_level,variants) )
-#define LQL_NEXT(x) ( (lquery_level*)( ((char*)(x)) + MAXALIGN(((lquery_level*)(x))->totallen) ) )
-#define LQL_FIRST(x)	( (lquery_variant*)( ((char*)(x))+LQL_HDRSIZE ) )
+#define LQL_HDRSIZE MAXALIGN( offsetof(lpathquery_level,variants) )
+#define LQL_NEXT(x) ( (lpathquery_level*)( ((char*)(x)) + MAXALIGN(((lpathquery_level*)(x))->totallen) ) )
+#define LQL_FIRST(x)	( (lpathquery_variant*)( ((char*)(x))+LQL_HDRSIZE ) )
 
 #define LQL_NOT		0x10
 #ifdef LOWER_NODE
@@ -66,7 +66,7 @@ typedef struct
 #else
 #define FLG_CANLOOKSIGN(x) ( ( (x) & ( LQL_NOT | LVAR_ANYEND | LVAR_SUBLEXEME | LVAR_INCASE ) ) == 0 )
 #endif
-#define LQL_CANLOOKSIGN(x) FLG_CANLOOKSIGN( ((lquery_level*)(x))->flag )
+#define LQL_CANLOOKSIGN(x) FLG_CANLOOKSIGN( ((lpathquery_level*)(x))->flag )
 
 typedef struct
 {
@@ -75,12 +75,12 @@ typedef struct
 	uint16		firstgood;
 	uint16		flag;
 	char		data[1];
-} lquery;
+} lpathquery;
 
-#define LQUERY_HDRSIZE	 MAXALIGN( offsetof(lquery, data) )
-#define LQUERY_FIRST(x)   ( (lquery_level*)( ((char*)(x))+LQUERY_HDRSIZE ) )
+#define LPATHQUERY_HDRSIZE	 MAXALIGN( offsetof(lpathquery, data) )
+#define LPATHQUERY_FIRST(x)   ( (lpathquery_level*)( ((char*)(x))+LPATHQUERY_HDRSIZE ) )
 
-#define LQUERY_HASNOT		0x01
+#define LPATHQUERY_HASNOT		0x01
 
 #define ISALNUM(x)	( t_isalpha(x) || t_isdigit(x)	|| ( pg_mblen(x) == 1 && t_iseq((x), '_') ) )
 #define ISALLOWEDCHAR(x)	( t_isprint(x) && ! ( pg_mblen(x) == 1 && t_iseq((x), NODE_DELIMITER_CHAR) ) )
@@ -105,19 +105,10 @@ typedef struct ITEM
  *Storage:
  *		(len)(size)(array of ITEM)(array of operand in user-friendly form)
  */
-typedef struct
-{
-	int32		vl_len_;		/* varlena header (do not touch directly!) */
-	int32		size;
-	char		data[1];
-} ltxtquery;
 
 #define HDRSIZEQT		MAXALIGN(VARHDRSZ + sizeof(int32))
 #define COMPUTESIZE(size,lenofoperand)	( HDRSIZEQT + (size) * sizeof(ITEM) + (lenofoperand) )
-#define LTXTQUERY_TOO_BIG(size,lenofoperand) \
-	((size) > (MaxAllocSize - HDRSIZEQT - (lenofoperand)) / sizeof(ITEM))
 #define GETQUERY(x)  (ITEM*)( (char*)(x)+HDRSIZEQT )
-#define GETOPERAND(x)	( (char*)GETQUERY(x) + ((ltxtquery*)x)->size * sizeof(ITEM) )
 
 #define ISOPERATOR(x) ( (x)=='!' || (x)=='&' || (x)=='|' || (x)=='(' || (x)==')' )
 
@@ -132,49 +123,43 @@ typedef struct
 
 
 /* use in array iterator */
-Datum		ltree_isparent(PG_FUNCTION_ARGS);
-Datum		ltree_risparent(PG_FUNCTION_ARGS);
+Datum		lpathtree_isparent(PG_FUNCTION_ARGS);
+Datum		lpathtree_risparent(PG_FUNCTION_ARGS);
 Datum		ltq_regex(PG_FUNCTION_ARGS);
 Datum		ltq_rregex(PG_FUNCTION_ARGS);
 Datum		lt_q_regex(PG_FUNCTION_ARGS);
 Datum		lt_q_rregex(PG_FUNCTION_ARGS);
-Datum		ltxtq_exec(PG_FUNCTION_ARGS);
-Datum		ltxtq_rexec(PG_FUNCTION_ARGS);
 Datum		_ltq_regex(PG_FUNCTION_ARGS);
 Datum		_ltq_rregex(PG_FUNCTION_ARGS);
 Datum		_lt_q_regex(PG_FUNCTION_ARGS);
 Datum		_lt_q_rregex(PG_FUNCTION_ARGS);
-Datum		_ltxtq_exec(PG_FUNCTION_ARGS);
-Datum		_ltxtq_rexec(PG_FUNCTION_ARGS);
-Datum		_ltree_isparent(PG_FUNCTION_ARGS);
-Datum		_ltree_risparent(PG_FUNCTION_ARGS);
+Datum		_lpathtree_isparent(PG_FUNCTION_ARGS);
+Datum		_lpathtree_risparent(PG_FUNCTION_ARGS);
 
 /* Concatenation functions */
-Datum		ltree_addltree(PG_FUNCTION_ARGS);
-Datum		ltree_addtext(PG_FUNCTION_ARGS);
-Datum		ltree_textadd(PG_FUNCTION_ARGS);
+Datum		lpathtree_addlpathtree(PG_FUNCTION_ARGS);
+Datum		lpathtree_addtext(PG_FUNCTION_ARGS);
+Datum		lpathtree_textadd(PG_FUNCTION_ARGS);
 
 /* Util function */
-Datum		ltree_in(PG_FUNCTION_ARGS);
+Datum		lpathtree_in(PG_FUNCTION_ARGS);
 
-bool ltree_execute(ITEM *curitem, void *checkval,
+bool lpathtree_execute(ITEM *curitem, void *checkval,
 			  bool calcnot, bool (*chkcond) (void *checkval, ITEM *val));
 
-int			ltree_compare(const ltree *a, const ltree *b);
-bool		inner_isparent(const ltree *c, const ltree *p);
-bool compare_subnode(ltree_level *t, char *q, int len,
+int			lpathtree_compare(const lpathtree *a, const lpathtree *b);
+bool		inner_isparent(const lpathtree *c, const lpathtree *p);
+bool compare_subnode(lpathtree_level *t, char *q, int len,
 			int (*cmpptr) (const char *, const char *, size_t), bool anyend);
-ltree	   *lca_inner(ltree **a, int len);
-int			ltree_strncasecmp(const char *a, const char *b, size_t s);
+lpathtree	   *lca_inner(lpathtree **a, int len);
+int			lpathtree_strncasecmp(const char *a, const char *b, size_t s);
 
-#define PG_GETARG_LTREE(x)	((ltree*)DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(x))))
-#define PG_GETARG_LTREE_COPY(x) ((ltree*)DatumGetPointer(PG_DETOAST_DATUM_COPY(PG_GETARG_DATUM(x))))
-#define PG_GETARG_LQUERY(x) ((lquery*)DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(x))))
-#define PG_GETARG_LQUERY_COPY(x) ((lquery*)DatumGetPointer(PG_DETOAST_DATUM_COPY(PG_GETARG_DATUM(x))))
-#define PG_GETARG_LTXTQUERY(x) ((ltxtquery*)DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(x))))
-#define PG_GETARG_LTXTQUERY_COPY(x) ((ltxtquery*)DatumGetPointer(PG_DETOAST_DATUM_COPY(PG_GETARG_DATUM(x))))
+#define PG_GETARG_LPATHTREE(x)	((lpathtree*)DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(x))))
+#define PG_GETARG_LPATHTREE_COPY(x) ((lpathtree*)DatumGetPointer(PG_DETOAST_DATUM_COPY(PG_GETARG_DATUM(x))))
+#define PG_GETARG_LPATHQUERY(x) ((lpathquery*)DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(x))))
+#define PG_GETARG_LPATHQUERY_COPY(x) ((lpathquery*)DatumGetPointer(PG_DETOAST_DATUM_COPY(PG_GETARG_DATUM(x))))
 
-/* GiST support for ltree */
+/* GiST support for lpathtree */
 
 #define BITBYTE 8
 #define SIGLENINT  2
@@ -196,13 +181,13 @@ typedef unsigned char *BITVECP;
 #define HASH(sign, val) SETBIT((sign), HASHVAL(val))
 
 /*
- * type of index key for ltree. Tree are combined B-Tree and R-Tree
+ * type of index key for lpathtree. Tree are combined B-Tree and R-Tree
  * Storage:
  *	Leaf pages
- *		(len)(flag)(ltree)
+ *		(len)(flag)(lpathtree)
  *	Non-Leaf
- *				 (len)(flag)(sign)(left_ltree)(right_ltree)
- *		ALLTRUE: (len)(flag)(left_ltree)(right_ltree)
+ *				 (len)(flag)(sign)(left_lpathtree)(right_lpathtree)
+ *		ALLTRUE: (len)(flag)(left_lpathtree)(right_lpathtree)
  *
  */
 
@@ -211,7 +196,7 @@ typedef struct
 	int32		vl_len_;		/* varlena header (do not touch directly!) */
 	uint32		flag;
 	char		data[1];
-} ltree_gist;
+} lpathtree_gist;
 
 #define LTG_ONENODE 0x01
 #define LTG_ALLTRUE 0x02
@@ -219,19 +204,19 @@ typedef struct
 
 #define LTG_HDRSIZE MAXALIGN(VARHDRSZ + sizeof(uint32))
 #define LTG_SIGN(x) ( (BITVECP)( ((char*)(x))+LTG_HDRSIZE ) )
-#define LTG_NODE(x) ( (ltree*)( ((char*)(x))+LTG_HDRSIZE ) )
-#define LTG_ISONENODE(x) ( ((ltree_gist*)(x))->flag & LTG_ONENODE )
-#define LTG_ISALLTRUE(x) ( ((ltree_gist*)(x))->flag & LTG_ALLTRUE )
-#define LTG_ISNORIGHT(x) ( ((ltree_gist*)(x))->flag & LTG_NORIGHT )
-#define LTG_LNODE(x)	( (ltree*)( ( ((char*)(x))+LTG_HDRSIZE ) + ( LTG_ISALLTRUE(x) ? 0 : SIGLEN ) ) )
-#define LTG_RENODE(x)	( (ltree*)( ((char*)LTG_LNODE(x)) + VARSIZE(LTG_LNODE(x))) )
+#define LTG_NODE(x) ( (lpathtree*)( ((char*)(x))+LTG_HDRSIZE ) )
+#define LTG_ISONENODE(x) ( ((lpathtree_gist*)(x))->flag & LTG_ONENODE )
+#define LTG_ISALLTRUE(x) ( ((lpathtree_gist*)(x))->flag & LTG_ALLTRUE )
+#define LTG_ISNORIGHT(x) ( ((lpathtree_gist*)(x))->flag & LTG_NORIGHT )
+#define LTG_LNODE(x)	( (lpathtree*)( ( ((char*)(x))+LTG_HDRSIZE ) + ( LTG_ISALLTRUE(x) ? 0 : SIGLEN ) ) )
+#define LTG_RENODE(x)	( (lpathtree*)( ((char*)LTG_LNODE(x)) + VARSIZE(LTG_LNODE(x))) )
 #define LTG_RNODE(x)	( LTG_ISNORIGHT(x) ? LTG_LNODE(x) : LTG_RENODE(x) )
 
 #define LTG_GETLNODE(x) ( LTG_ISONENODE(x) ? LTG_NODE(x) : LTG_LNODE(x) )
 #define LTG_GETRNODE(x) ( LTG_ISONENODE(x) ? LTG_NODE(x) : LTG_RNODE(x) )
 
 
-/* GiST support for ltree[] */
+/* GiST support for lpathtree[] */
 
 #define ASIGLENINT	(7)
 #define ASIGLEN		(sizeof(int32)*ASIGLENINT)
@@ -244,6 +229,6 @@ typedef unsigned char ABITVEC[ASIGLEN];
 #define AHASHVAL(val) (((unsigned int)(val)) % ASIGLENBIT)
 #define AHASH(sign, val) SETBIT((sign), AHASHVAL(val))
 
-/* type of key is the same to ltree_gist */
+/* type of key is the same to lpathtree_gist */
 
 #endif

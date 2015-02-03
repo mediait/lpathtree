@@ -1,27 +1,27 @@
 /*
- * in/out function for ltree and lquery
+ * in/out function for lpathtree and lpathquery
  * Teodor Sigaev <teodor@stack.net>
- * contrib/ltree/ltree_io.c
+ * contrib/lpathtree/lpathtree_io.c
  */
 #include "postgres.h"
 
 #include <ctype.h>
 
-#include "ltree.h"
+#include "lpathtree.h"
 #include "utils/memutils.h"
 #include "crc32.h"
 
-PG_FUNCTION_INFO_V1(ltree_in);
-Datum		ltree_in(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_in);
+Datum		lpathtree_in(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(ltree_out);
-Datum		ltree_out(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathtree_out);
+Datum		lpathtree_out(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(lquery_in);
-Datum		lquery_in(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathquery_in);
+Datum		lpathquery_in(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(lquery_out);
-Datum		lquery_out(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(lpathquery_out);
+Datum		lpathquery_out(PG_FUNCTION_ARGS);
 
 
 #define UNCHAR ereport(ERROR, \
@@ -42,7 +42,7 @@ typedef struct
 #define LTPRS_WAITDELIM 1
 
 Datum
-ltree_in(PG_FUNCTION_ARGS)
+lpathtree_in(PG_FUNCTION_ARGS)
 {
 	char	   *buf = (char *) PG_GETARG_POINTER(0);
 	char	   *ptr;
@@ -51,12 +51,13 @@ ltree_in(PG_FUNCTION_ARGS)
 	int			num = 0,
 				totallen = 0;
 	int			state = LTPRS_WAITNAME;
-	ltree	   *result;
-	ltree_level *curlevel;
+	lpathtree	   *result;
+	lpathtree_level *curlevel;
 	int			charlen;
 	int			pos = 0;
 
 	ptr = buf;
+	if( 1 == pg_mblen(ptr) && t_iseq(ptr, NODE_DELIMITER_CHAR) ) ptr++;
 	while (*ptr)
 	{
 		charlen = pg_mblen(ptr);
@@ -72,6 +73,7 @@ ltree_in(PG_FUNCTION_ARGS)
 					num + 1, (int) (MaxAllocSize / sizeof(nodeitem)))));
 	list = lptr = (nodeitem *) palloc(sizeof(nodeitem) * (num + 1));
 	ptr = buf;
+	if( 1 == pg_mblen(ptr) && t_iseq(ptr, NODE_DELIMITER_CHAR) ) ptr++;
 	while (*ptr)
 	{
 		charlen = pg_mblen(ptr);
@@ -136,10 +138,10 @@ ltree_in(PG_FUNCTION_ARGS)
 				 errmsg("syntax error"),
 				 errdetail("Unexpected end of line.")));
 
-	result = (ltree *) palloc0(LTREE_HDRSIZE + totallen);
-	SET_VARSIZE(result, LTREE_HDRSIZE + totallen);
+	result = (lpathtree *) palloc0(lpathtree_HDRSIZE + totallen);
+	SET_VARSIZE(result, lpathtree_HDRSIZE + totallen);
 	result->numlevel = lptr - list;
-	curlevel = LTREE_FIRST(result);
+	curlevel = LPATHTREE_FIRST(result);
 	lptr = list;
 	while (lptr - list < result->numlevel)
 	{
@@ -154,16 +156,16 @@ ltree_in(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_out(PG_FUNCTION_ARGS)
+lpathtree_out(PG_FUNCTION_ARGS)
 {
-	ltree	   *in = PG_GETARG_LTREE(0);
+	lpathtree	   *in = PG_GETARG_LPATHTREE(0);
 	char	   *buf,
 			   *ptr;
 	int			i;
-	ltree_level *curlevel;
+	lpathtree_level *curlevel;
 
 	ptr = buf = (char *) palloc(VARSIZE(in));
-	curlevel = LTREE_FIRST(in);
+	curlevel = LPATHTREE_FIRST(in);
 	for (i = 0; i < in->numlevel; i++)
 	{
 		if (i != 0)
@@ -195,10 +197,10 @@ ltree_out(PG_FUNCTION_ARGS)
 
 #define GETVAR(x) ( *((nodeitem**)LQL_FIRST(x)) )
 #define ITEMSIZE	MAXALIGN(LQL_HDRSIZE+sizeof(nodeitem*))
-#define NEXTLEV(x) ( (lquery_level*)( ((char*)(x)) + ITEMSIZE) )
+#define NEXTLEV(x) ( (lpathquery_level*)( ((char*)(x)) + ITEMSIZE) )
 
 Datum
-lquery_in(PG_FUNCTION_ARGS)
+lpathquery_in(PG_FUNCTION_ARGS)
 {
 	char	   *buf = (char *) PG_GETARG_POINTER(0);
 	char	   *ptr;
@@ -206,12 +208,12 @@ lquery_in(PG_FUNCTION_ARGS)
 				totallen = 0,
 				numOR = 0;
 	int			state = LQPRS_WAITLEVEL;
-	lquery	   *result;
+	lpathquery	   *result;
 	nodeitem   *lptr = NULL;
-	lquery_level *cur,
+	lpathquery_level *cur,
 			   *curqlevel,
 			   *tmpql;
-	lquery_variant *lrptr = NULL;
+	lpathquery_variant *lrptr = NULL;
 	bool		hasnot = false;
 	bool		wasbad = false;
 	int			charlen;
@@ -239,7 +241,7 @@ lquery_in(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
 			 errmsg("number of levels (%d) exceeds the maximum allowed (%d)",
 					num, (int) (MaxAllocSize / ITEMSIZE))));
-	curqlevel = tmpql = (lquery_level *) palloc0(ITEMSIZE * num);
+	curqlevel = tmpql = (lpathquery_level *) palloc0(ITEMSIZE * num);
 	ptr = buf;
 	while (*ptr)
 	{
@@ -459,7 +461,7 @@ lquery_in(PG_FUNCTION_ARGS)
 				 errdetail("Unexpected end of line.")));
 
 	curqlevel = tmpql;
-	totallen = LQUERY_HDRSIZE;
+	totallen = LPATHQUERY_HDRSIZE;
 	while ((char *) curqlevel - (char *) tmpql < num * ITEMSIZE)
 	{
 		totallen += LQL_HDRSIZE;
@@ -482,14 +484,14 @@ lquery_in(PG_FUNCTION_ARGS)
 		curqlevel = NEXTLEV(curqlevel);
 	}
 
-	result = (lquery *) palloc0(totallen);
+	result = (lpathquery *) palloc0(totallen);
 	SET_VARSIZE(result, totallen);
 	result->numlevel = num;
 	result->firstgood = 0;
 	result->flag = 0;
 	if (hasnot)
-		result->flag |= LQUERY_HASNOT;
-	cur = LQUERY_FIRST(result);
+		result->flag |= LPATHQUERY_HASNOT;
+	cur = LPATHQUERY_FIRST(result);
 	curqlevel = tmpql;
 	while ((char *) curqlevel - (char *) tmpql < num * ITEMSIZE)
 	{
@@ -504,7 +506,7 @@ lquery_in(PG_FUNCTION_ARGS)
 				cur->totallen += MAXALIGN(LVAR_HDRSIZE + lptr->len);
 				lrptr->len = lptr->len;
 				lrptr->flag = lptr->flag;
-				lrptr->val = ltree_crc32_sz(lptr->start, lptr->len);
+				lrptr->val = lpathtree_crc32_sz(lptr->start, lptr->len);
 				memcpy(lrptr->name, lptr->start, lptr->len);
 				lptr++;
 				lrptr = LVAR_NEXT(lrptr);
@@ -526,18 +528,18 @@ lquery_in(PG_FUNCTION_ARGS)
 }
 
 Datum
-lquery_out(PG_FUNCTION_ARGS)
+lpathquery_out(PG_FUNCTION_ARGS)
 {
-	lquery	   *in = PG_GETARG_LQUERY(0);
+	lpathquery *in = PG_GETARG_LPATHQUERY(0);
 	char	   *buf,
 			   *ptr;
 	int			i,
 				j,
 				totallen = 1;
-	lquery_level *curqlevel;
-	lquery_variant *curtlevel;
+	lpathquery_level *curqlevel;
+	lpathquery_variant *curtlevel;
 
-	curqlevel = LQUERY_FIRST(in);
+	curqlevel = LPATHQUERY_FIRST(in);
 	for (i = 0; i < in->numlevel; i++)
 	{
 		totallen++;
@@ -549,7 +551,7 @@ lquery_out(PG_FUNCTION_ARGS)
 	}
 
 	ptr = buf = (char *) palloc(totallen);
-	curqlevel = LQUERY_FIRST(in);
+	curqlevel = LPATHQUERY_FIRST(in);
 	for (i = 0; i < in->numlevel; i++)
 	{
 		if (i != 0)

@@ -1,14 +1,14 @@
 /*
  * txtquery io
  * Teodor Sigaev <teodor@stack.net>
- * contrib/ltree/ltxtquery_io.c
+ * contrib/lpathtree/ltxtquery_io.c
  */
 #include "postgres.h"
 
 #include <ctype.h>
 
 #include "crc32.h"
-#include "ltree.h"
+#include "lpathtree.h"
 #include "miscadmin.h"
 
 PG_FUNCTION_INFO_V1(ltxtq_in);
@@ -179,7 +179,7 @@ pushval_asis(QPRS_STATE *state, int type, char *strval, int lenval, uint16 flag)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("word is too long")));
 
-	pushquery(state, type, ltree_crc32_sz(strval, lenval),
+	pushquery(state, type, lpathtree_crc32_sz(strval, lenval),
 			  state->curop - state->op, lenval, flag);
 
 	while (state->curop - state->op + lenval + 1 >= state->lenop)

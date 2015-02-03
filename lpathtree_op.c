@@ -1,7 +1,7 @@
 /*
- * op function for ltree
+ * op function for lpathtree
  * Teodor Sigaev <teodor@stack.net>
- * contrib/ltree/ltree_op.c
+ * contrib/lpathtree/lpathtree_op.c
  */
 #include "postgres.h"
 
@@ -12,56 +12,56 @@
 #include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "utils/selfuncs.h"
-#include "ltree.h"
+#include "lpathtree.h"
 
 PG_MODULE_MAGIC;
 
 /* compare functions */
-PG_FUNCTION_INFO_V1(ltree_cmp);
-PG_FUNCTION_INFO_V1(ltree_lt);
-PG_FUNCTION_INFO_V1(ltree_le);
-PG_FUNCTION_INFO_V1(ltree_eq);
-PG_FUNCTION_INFO_V1(ltree_ne);
-PG_FUNCTION_INFO_V1(ltree_ge);
-PG_FUNCTION_INFO_V1(ltree_gt);
+PG_FUNCTION_INFO_V1(lpathtree_cmp);
+PG_FUNCTION_INFO_V1(lpathtree_lt);
+PG_FUNCTION_INFO_V1(lpathtree_le);
+PG_FUNCTION_INFO_V1(lpathtree_eq);
+PG_FUNCTION_INFO_V1(lpathtree_ne);
+PG_FUNCTION_INFO_V1(lpathtree_ge);
+PG_FUNCTION_INFO_V1(lpathtree_gt);
 PG_FUNCTION_INFO_V1(nlevel);
-PG_FUNCTION_INFO_V1(ltree_isparent);
-PG_FUNCTION_INFO_V1(ltree_risparent);
-PG_FUNCTION_INFO_V1(subltree);
+PG_FUNCTION_INFO_V1(lpathtree_isparent);
+PG_FUNCTION_INFO_V1(lpathtree_risparent);
+PG_FUNCTION_INFO_V1(sublpathtree);
 PG_FUNCTION_INFO_V1(subpath);
-PG_FUNCTION_INFO_V1(ltree_index);
-PG_FUNCTION_INFO_V1(ltree_addltree);
-PG_FUNCTION_INFO_V1(ltree_addtext);
-PG_FUNCTION_INFO_V1(ltree_textadd);
+PG_FUNCTION_INFO_V1(lpathtree_index);
+PG_FUNCTION_INFO_V1(lpathtree_addlpathtree);
+PG_FUNCTION_INFO_V1(lpathtree_addtext);
+PG_FUNCTION_INFO_V1(lpathtree_textadd);
 PG_FUNCTION_INFO_V1(lca);
-PG_FUNCTION_INFO_V1(ltree2text);
-PG_FUNCTION_INFO_V1(text2ltree);
-PG_FUNCTION_INFO_V1(ltreeparentsel);
+PG_FUNCTION_INFO_V1(lpathtree2text);
+PG_FUNCTION_INFO_V1(text2lpathtree);
+PG_FUNCTION_INFO_V1(lpathtreeparentsel);
 
-Datum		ltree_cmp(PG_FUNCTION_ARGS);
-Datum		ltree_lt(PG_FUNCTION_ARGS);
-Datum		ltree_le(PG_FUNCTION_ARGS);
-Datum		ltree_eq(PG_FUNCTION_ARGS);
-Datum		ltree_ne(PG_FUNCTION_ARGS);
-Datum		ltree_ge(PG_FUNCTION_ARGS);
-Datum		ltree_gt(PG_FUNCTION_ARGS);
+Datum		lpathtree_cmp(PG_FUNCTION_ARGS);
+Datum		lpathtree_lt(PG_FUNCTION_ARGS);
+Datum		lpathtree_le(PG_FUNCTION_ARGS);
+Datum		lpathtree_eq(PG_FUNCTION_ARGS);
+Datum		lpathtree_ne(PG_FUNCTION_ARGS);
+Datum		lpathtree_ge(PG_FUNCTION_ARGS);
+Datum		lpathtree_gt(PG_FUNCTION_ARGS);
 Datum		nlevel(PG_FUNCTION_ARGS);
-Datum		subltree(PG_FUNCTION_ARGS);
+Datum		sublpathtree(PG_FUNCTION_ARGS);
 Datum		subpath(PG_FUNCTION_ARGS);
-Datum		ltree_index(PG_FUNCTION_ARGS);
-Datum		ltree_addltree(PG_FUNCTION_ARGS);
-Datum		ltree_addtext(PG_FUNCTION_ARGS);
-Datum		ltree_textadd(PG_FUNCTION_ARGS);
+Datum		lpathtree_index(PG_FUNCTION_ARGS);
+Datum		lpathtree_addlpathtree(PG_FUNCTION_ARGS);
+Datum		lpathtree_addtext(PG_FUNCTION_ARGS);
+Datum		lpathtree_textadd(PG_FUNCTION_ARGS);
 Datum		lca(PG_FUNCTION_ARGS);
-Datum		ltree2text(PG_FUNCTION_ARGS);
-Datum		text2ltree(PG_FUNCTION_ARGS);
-Datum		ltreeparentsel(PG_FUNCTION_ARGS);
+Datum		lpathtree2text(PG_FUNCTION_ARGS);
+Datum		text2lpathtree(PG_FUNCTION_ARGS);
+Datum		lpathtreeparentsel(PG_FUNCTION_ARGS);
 
 int
-ltree_compare(const ltree *a, const ltree *b)
+lpathtree_compare(const lpathtree *a, const lpathtree *b)
 {
-	ltree_level *al = LTREE_FIRST(a);
-	ltree_level *bl = LTREE_FIRST(b);
+	lpathtree_level *al = LPATHTREE_FIRST(a);
+	lpathtree_level *bl = LPATHTREE_FIRST(b);
 	int			an = a->numlevel;
 	int			bn = b->numlevel;
 	int			res = 0;
@@ -86,56 +86,56 @@ ltree_compare(const ltree *a, const ltree *b)
 }
 
 #define RUNCMP						\
-ltree *a	= PG_GETARG_LTREE(0);			\
-ltree *b	= PG_GETARG_LTREE(1);			\
-int res = ltree_compare(a,b);				\
+lpathtree *a	= PG_GETARG_LPATHTREE(0);			\
+lpathtree *b	= PG_GETARG_LPATHTREE(1);			\
+int res = lpathtree_compare(a,b);				\
 PG_FREE_IF_COPY(a,0);					\
 PG_FREE_IF_COPY(b,1);					\
 
 Datum
-ltree_cmp(PG_FUNCTION_ARGS)
+lpathtree_cmp(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_INT32(res);
 }
 
 Datum
-ltree_lt(PG_FUNCTION_ARGS)
+lpathtree_lt(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_BOOL((res < 0) ? true : false);
 }
 
 Datum
-ltree_le(PG_FUNCTION_ARGS)
+lpathtree_le(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_BOOL((res <= 0) ? true : false);
 }
 
 Datum
-ltree_eq(PG_FUNCTION_ARGS)
+lpathtree_eq(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_BOOL((res == 0) ? true : false);
 }
 
 Datum
-ltree_ge(PG_FUNCTION_ARGS)
+lpathtree_ge(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_BOOL((res >= 0) ? true : false);
 }
 
 Datum
-ltree_gt(PG_FUNCTION_ARGS)
+lpathtree_gt(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_BOOL((res > 0) ? true : false);
 }
 
 Datum
-ltree_ne(PG_FUNCTION_ARGS)
+lpathtree_ne(PG_FUNCTION_ARGS)
 {
 	RUNCMP
 		PG_RETURN_BOOL((res != 0) ? true : false);
@@ -144,7 +144,7 @@ ltree_ne(PG_FUNCTION_ARGS)
 Datum
 nlevel(PG_FUNCTION_ARGS)
 {
-	ltree	   *a = PG_GETARG_LTREE(0);
+	lpathtree	   *a = PG_GETARG_LPATHTREE(0);
 	int			res = a->numlevel;
 
 	PG_FREE_IF_COPY(a, 0);
@@ -152,10 +152,10 @@ nlevel(PG_FUNCTION_ARGS)
 }
 
 bool
-inner_isparent(const ltree *c, const ltree *p)
+inner_isparent(const lpathtree *c, const lpathtree *p)
 {
-	ltree_level *cl = LTREE_FIRST(c);
-	ltree_level *pl = LTREE_FIRST(p);
+	lpathtree_level *cl = LPATHTREE_FIRST(c);
+	lpathtree_level *pl = LPATHTREE_FIRST(p);
 	int			pn = p->numlevel;
 
 	if (pn > c->numlevel)
@@ -176,10 +176,10 @@ inner_isparent(const ltree *c, const ltree *p)
 }
 
 Datum
-ltree_isparent(PG_FUNCTION_ARGS)
+lpathtree_isparent(PG_FUNCTION_ARGS)
 {
-	ltree	   *c = PG_GETARG_LTREE(1);
-	ltree	   *p = PG_GETARG_LTREE(0);
+	lpathtree	   *c = PG_GETARG_LPATHTREE(1);
+	lpathtree	   *p = PG_GETARG_LPATHTREE(0);
 	bool		res = inner_isparent(c, p);
 
 	PG_FREE_IF_COPY(c, 1);
@@ -188,10 +188,10 @@ ltree_isparent(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_risparent(PG_FUNCTION_ARGS)
+lpathtree_risparent(PG_FUNCTION_ARGS)
 {
-	ltree	   *c = PG_GETARG_LTREE(0);
-	ltree	   *p = PG_GETARG_LTREE(1);
+	lpathtree	   *c = PG_GETARG_LPATHTREE(0);
+	lpathtree	   *p = PG_GETARG_LPATHTREE(1);
 	bool		res = inner_isparent(c, p);
 
 	PG_FREE_IF_COPY(c, 0);
@@ -200,16 +200,17 @@ ltree_risparent(PG_FUNCTION_ARGS)
 }
 
 
-static ltree *
-inner_subltree(ltree *t, int32 startpos, int32 endpos)
+static lpathtree *
+inner_sublpathtree(lpathtree *t, int32 startpos, int32 endpos)
 {
 	char	   *start = NULL,
 			   *end = NULL;
-	ltree_level *ptr = LTREE_FIRST(t);
-	ltree	   *res;
+	lpathtree_level *ptr = LPATHTREE_FIRST(t);
+	lpathtree	   *res;
 	int			i;
-
-	if (startpos < 0 || endpos < 0 || startpos >= t->numlevel || startpos > endpos)
+	if (startpos > endpos) startpos = endpos;
+	// if (startpos < 0 || endpos < 0 || startpos >= t->numlevel || startpos > endpos)
+	if (startpos < 0 || endpos < 0 )
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("invalid positions")));
@@ -230,20 +231,20 @@ inner_subltree(ltree *t, int32 startpos, int32 endpos)
 		ptr = LEVEL_NEXT(ptr);
 	}
 
-	res = (ltree *) palloc(LTREE_HDRSIZE + (end - start));
-	SET_VARSIZE(res, LTREE_HDRSIZE + (end - start));
+	res = (lpathtree *) palloc(lpathtree_HDRSIZE + (end - start));
+	SET_VARSIZE(res, lpathtree_HDRSIZE + (end - start));
 	res->numlevel = endpos - startpos;
 
-	memcpy(LTREE_FIRST(res), start, end - start);
+	memcpy(LPATHTREE_FIRST(res), start, end - start);
 
 	return res;
 }
 
 Datum
-subltree(PG_FUNCTION_ARGS)
+sublpathtree(PG_FUNCTION_ARGS)
 {
-	ltree	   *t = PG_GETARG_LTREE(0);
-	ltree	   *res = inner_subltree(t, PG_GETARG_INT32(1), PG_GETARG_INT32(2));
+	lpathtree	   *t = PG_GETARG_LPATHTREE(0);
+	lpathtree	   *res = inner_sublpathtree(t, PG_GETARG_INT32(1), PG_GETARG_INT32(2));
 
 	PG_FREE_IF_COPY(t, 0);
 	PG_RETURN_POINTER(res);
@@ -252,11 +253,11 @@ subltree(PG_FUNCTION_ARGS)
 Datum
 subpath(PG_FUNCTION_ARGS)
 {
-	ltree	   *t = PG_GETARG_LTREE(0);
+	lpathtree	   *t = PG_GETARG_LPATHTREE(0);
 	int32		start = PG_GETARG_INT32(1);
 	int32		len = (fcinfo->nargs == 3) ? PG_GETARG_INT32(2) : 0;
 	int32		end;
-	ltree	   *res;
+	lpathtree	   *res;
 
 	end = start + len;
 
@@ -276,58 +277,58 @@ subpath(PG_FUNCTION_ARGS)
 	else if (len == 0)
 		end = (fcinfo->nargs == 3) ? start : 0xffff;
 
-	res = inner_subltree(t, start, end);
+	res = inner_sublpathtree(t, start, end);
 
 	PG_FREE_IF_COPY(t, 0);
 	PG_RETURN_POINTER(res);
 }
 
-static ltree *
-ltree_concat(ltree *a, ltree *b)
+static lpathtree *
+lpathtree_concat(lpathtree *a, lpathtree *b)
 {
-	ltree	   *r;
+	lpathtree	   *r;
 
-	r = (ltree *) palloc(VARSIZE(a) + VARSIZE(b) - LTREE_HDRSIZE);
-	SET_VARSIZE(r, VARSIZE(a) + VARSIZE(b) - LTREE_HDRSIZE);
+	r = (lpathtree *) palloc(VARSIZE(a) + VARSIZE(b) - lpathtree_HDRSIZE);
+	SET_VARSIZE(r, VARSIZE(a) + VARSIZE(b) - lpathtree_HDRSIZE);
 	r->numlevel = a->numlevel + b->numlevel;
 
-	memcpy(LTREE_FIRST(r), LTREE_FIRST(a), VARSIZE(a) - LTREE_HDRSIZE);
-	memcpy(((char *) LTREE_FIRST(r)) + VARSIZE(a) - LTREE_HDRSIZE,
-		   LTREE_FIRST(b),
-		   VARSIZE(b) - LTREE_HDRSIZE);
+	memcpy(LPATHTREE_FIRST(r), LPATHTREE_FIRST(a), VARSIZE(a) - lpathtree_HDRSIZE);
+	memcpy(((char *) LPATHTREE_FIRST(r)) + VARSIZE(a) - lpathtree_HDRSIZE,
+		   LPATHTREE_FIRST(b),
+		   VARSIZE(b) - lpathtree_HDRSIZE);
 	return r;
 }
 
 Datum
-ltree_addltree(PG_FUNCTION_ARGS)
+lpathtree_addlpathtree(PG_FUNCTION_ARGS)
 {
-	ltree	   *a = PG_GETARG_LTREE(0);
-	ltree	   *b = PG_GETARG_LTREE(1);
-	ltree	   *r;
+	lpathtree	   *a = PG_GETARG_LPATHTREE(0);
+	lpathtree	   *b = PG_GETARG_LPATHTREE(1);
+	lpathtree	   *r;
 
-	r = ltree_concat(a, b);
+	r = lpathtree_concat(a, b);
 	PG_FREE_IF_COPY(a, 0);
 	PG_FREE_IF_COPY(b, 1);
 	PG_RETURN_POINTER(r);
 }
 
 Datum
-ltree_addtext(PG_FUNCTION_ARGS)
+lpathtree_addtext(PG_FUNCTION_ARGS)
 {
-	ltree	   *a = PG_GETARG_LTREE(0);
+	lpathtree	   *a = PG_GETARG_LPATHTREE(0);
 	text	   *b = PG_GETARG_TEXT_PP(1);
 	char	   *s;
-	ltree	   *r,
+	lpathtree	   *r,
 			   *tmp;
 
 	s = text_to_cstring(b);
 
-	tmp = (ltree *) DatumGetPointer(DirectFunctionCall1(ltree_in,
+	tmp = (lpathtree *) DatumGetPointer(DirectFunctionCall1(lpathtree_in,
 														PointerGetDatum(s)));
 
 	pfree(s);
 
-	r = ltree_concat(a, tmp);
+	r = lpathtree_concat(a, tmp);
 
 	pfree(tmp);
 
@@ -337,14 +338,14 @@ ltree_addtext(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_index(PG_FUNCTION_ARGS)
+lpathtree_index(PG_FUNCTION_ARGS)
 {
-	ltree	   *a = PG_GETARG_LTREE(0);
-	ltree	   *b = PG_GETARG_LTREE(1);
+	lpathtree	   *a = PG_GETARG_LPATHTREE(0);
+	lpathtree	   *b = PG_GETARG_LPATHTREE(1);
 	int			start = (fcinfo->nargs == 3) ? PG_GETARG_INT32(2) : 0;
 	int			i,
 				j;
-	ltree_level *startptr,
+	lpathtree_level *startptr,
 			   *aptr,
 			   *bptr;
 	bool		found = false;
@@ -364,13 +365,13 @@ ltree_index(PG_FUNCTION_ARGS)
 		PG_RETURN_INT32(-1);
 	}
 
-	startptr = LTREE_FIRST(a);
+	startptr = LPATHTREE_FIRST(a);
 	for (i = 0; i <= a->numlevel - b->numlevel; i++)
 	{
 		if (i >= start)
 		{
 			aptr = startptr;
-			bptr = LTREE_FIRST(b);
+			bptr = LPATHTREE_FIRST(b);
 			for (j = 0; j < b->numlevel; j++)
 			{
 				if (!(aptr->len == bptr->len && memcmp(aptr->name, bptr->name, aptr->len) == 0))
@@ -397,22 +398,22 @@ ltree_index(PG_FUNCTION_ARGS)
 }
 
 Datum
-ltree_textadd(PG_FUNCTION_ARGS)
+lpathtree_textadd(PG_FUNCTION_ARGS)
 {
-	ltree	   *a = PG_GETARG_LTREE(1);
+	lpathtree	   *a = PG_GETARG_LPATHTREE(1);
 	text	   *b = PG_GETARG_TEXT_PP(0);
 	char	   *s;
-	ltree	   *r,
+	lpathtree	   *r,
 			   *tmp;
 
 	s = text_to_cstring(b);
 
-	tmp = (ltree *) DatumGetPointer(DirectFunctionCall1(ltree_in,
+	tmp = (lpathtree *) DatumGetPointer(DirectFunctionCall1(lpathtree_in,
 														PointerGetDatum(s)));
 
 	pfree(s);
 
-	r = ltree_concat(tmp, a);
+	r = lpathtree_concat(tmp, a);
 
 	pfree(tmp);
 
@@ -421,17 +422,17 @@ ltree_textadd(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(r);
 }
 
-ltree *
-lca_inner(ltree **a, int len)
+lpathtree *
+lca_inner(lpathtree **a, int len)
 {
 	int			tmp,
 				num = ((*a)->numlevel) ? (*a)->numlevel - 1 : 0;
-	ltree	  **ptr = a + 1;
+	lpathtree	  **ptr = a + 1;
 	int			i,
-				reslen = LTREE_HDRSIZE;
-	ltree_level *l1,
+				reslen = lpathtree_HDRSIZE;
+	lpathtree_level *l1,
 			   *l2;
-	ltree	   *res;
+	lpathtree	   *res;
 
 
 	if ((*a)->numlevel == 0)
@@ -445,8 +446,8 @@ lca_inner(ltree **a, int len)
 			num = 0;
 		else
 		{
-			l1 = LTREE_FIRST(*a);
-			l2 = LTREE_FIRST(*ptr);
+			l1 = LPATHTREE_FIRST(*a);
+			l2 = LPATHTREE_FIRST(*ptr);
 			tmp = num;
 			num = 0;
 			for (i = 0; i < Min(tmp, (*ptr)->numlevel - 1); i++)
@@ -462,19 +463,19 @@ lca_inner(ltree **a, int len)
 		ptr++;
 	}
 
-	l1 = LTREE_FIRST(*a);
+	l1 = LPATHTREE_FIRST(*a);
 	for (i = 0; i < num; i++)
 	{
 		reslen += MAXALIGN(l1->len + LEVEL_HDRSIZE);
 		l1 = LEVEL_NEXT(l1);
 	}
 
-	res = (ltree *) palloc(reslen);
+	res = (lpathtree *) palloc(reslen);
 	SET_VARSIZE(res, reslen);
 	res->numlevel = num;
 
-	l1 = LTREE_FIRST(*a);
-	l2 = LTREE_FIRST(res);
+	l1 = LPATHTREE_FIRST(*a);
+	l2 = LPATHTREE_FIRST(res);
 
 	for (i = 0; i < num; i++)
 	{
@@ -490,12 +491,12 @@ Datum
 lca(PG_FUNCTION_ARGS)
 {
 	int			i;
-	ltree	  **a,
+	lpathtree	  **a,
 			   *res;
 
-	a = (ltree **) palloc(sizeof(ltree *) * fcinfo->nargs);
+	a = (lpathtree **) palloc(sizeof(lpathtree *) * fcinfo->nargs);
 	for (i = 0; i < fcinfo->nargs; i++)
-		a[i] = PG_GETARG_LTREE(i);
+		a[i] = PG_GETARG_LPATHTREE(i);
 	res = lca_inner(a, (int) fcinfo->nargs);
 	for (i = 0; i < fcinfo->nargs; i++)
 		PG_FREE_IF_COPY(a[i], i);
@@ -508,15 +509,15 @@ lca(PG_FUNCTION_ARGS)
 }
 
 Datum
-text2ltree(PG_FUNCTION_ARGS)
+text2lpathtree(PG_FUNCTION_ARGS)
 {
 	text	   *in = PG_GETARG_TEXT_PP(0);
 	char	   *s;
-	ltree	   *out;
+	lpathtree	   *out;
 
 	s = text_to_cstring(in);
 
-	out = (ltree *) DatumGetPointer(DirectFunctionCall1(ltree_in,
+	out = (lpathtree *) DatumGetPointer(DirectFunctionCall1(lpathtree_in,
 														PointerGetDatum(s)));
 	pfree(s);
 	PG_FREE_IF_COPY(in, 0);
@@ -525,17 +526,17 @@ text2ltree(PG_FUNCTION_ARGS)
 
 
 Datum
-ltree2text(PG_FUNCTION_ARGS)
+lpathtree2text(PG_FUNCTION_ARGS)
 {
-	ltree	   *in = PG_GETARG_LTREE(0);
+	lpathtree	   *in = PG_GETARG_LPATHTREE(0);
 	char	   *ptr;
 	int			i;
-	ltree_level *curlevel;
+	lpathtree_level *curlevel;
 	text	   *out;
 
 	out = (text *) palloc(VARSIZE(in) + VARHDRSZ);
 	ptr = VARDATA(out);
-	curlevel = LTREE_FIRST(in);
+	curlevel = LPATHTREE_FIRST(in);
 	for (i = 0; i < in->numlevel; i++)
 	{
 		if (i != 0)
@@ -558,10 +559,10 @@ ltree2text(PG_FUNCTION_ARGS)
 #define DEFAULT_PARENT_SEL 0.001
 
 /*
- *	ltreeparentsel - Selectivity of parent relationship for ltree data types.
+ *	lpathtreeparentsel - Selectivity of parent relationship for lpathtree data types.
  */
 Datum
-ltreeparentsel(PG_FUNCTION_ARGS)
+lpathtreeparentsel(PG_FUNCTION_ARGS)
 {
 	PlannerInfo *root = (PlannerInfo *) PG_GETARG_POINTER(0);
 	Oid			operator = PG_GETARG_OID(1);

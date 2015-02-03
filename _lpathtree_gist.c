@@ -1,8 +1,8 @@
 /*
- * contrib/ltree/_ltree_gist.c
+ * contrib/lpathtree/_lpathtree_gist.c
  *
  *
- * GiST support for ltree[]
+ * GiST support for lpathtree[]
  * Teodor Sigaev <teodor@stack.net>
  */
 #include "postgres.h"
@@ -10,29 +10,29 @@
 #include "access/gist.h"
 #include "access/skey.h"
 #include "crc32.h"
-#include "ltree.h"
+#include "lpathtree.h"
 
 
-PG_FUNCTION_INFO_V1(_ltree_compress);
-Datum		_ltree_compress(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(_lpathtree_compress);
+Datum		_lpathtree_compress(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(_ltree_same);
-Datum		_ltree_same(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(_lpathtree_same);
+Datum		_lpathtree_same(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(_ltree_union);
-Datum		_ltree_union(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(_lpathtree_union);
+Datum		_lpathtree_union(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(_ltree_penalty);
-Datum		_ltree_penalty(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(_lpathtree_penalty);
+Datum		_lpathtree_penalty(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(_ltree_picksplit);
-Datum		_ltree_picksplit(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(_lpathtree_picksplit);
+Datum		_lpathtree_picksplit(PG_FUNCTION_ARGS);
 
-PG_FUNCTION_INFO_V1(_ltree_consistent);
-Datum		_ltree_consistent(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(_lpathtree_consistent);
+Datum		_lpathtree_consistent(PG_FUNCTION_ARGS);
 
-#define GETENTRY(vec,pos) ((ltree_gist *) DatumGetPointer((vec)->vector[(pos)].key))
-#define NEXTVAL(x) ( (ltree*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
+#define GETENTRY(vec,pos) ((lpathtree_gist *) DatumGetPointer((vec)->vector[(pos)].key))
+#define NEXTVAL(x) ( (lpathtree*)( (char*)(x) + INTALIGN( VARSIZE(x) ) ) )
 
 /* Number of one-bits in an unsigned byte */
 static const uint8 number_of_ones[256] = {
@@ -58,15 +58,15 @@ static const uint8 number_of_ones[256] = {
 
 
 static void
-hashing(BITVECP sign, ltree *t)
+hashing(BITVECP sign, lpathtree *t)
 {
 	int			tlen = t->numlevel;
-	ltree_level *cur = LTREE_FIRST(t);
+	lpathtree_level *cur = LPATHTREE_FIRST(t);
 	int			hash;
 
 	while (tlen > 0)
 	{
-		hash = ltree_crc32_sz(cur->name, cur->len);
+		hash = lpathtree_crc32_sz(cur->name, cur->len);
 		AHASH(sign, hash);
 		cur = LEVEL_NEXT(cur);
 		tlen--;
@@ -74,18 +74,18 @@ hashing(BITVECP sign, ltree *t)
 }
 
 Datum
-_ltree_compress(PG_FUNCTION_ARGS)
+_lpathtree_compress(PG_FUNCTION_ARGS)
 {
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY  *retval = entry;
 
 	if (entry->leafkey)
-	{							/* ltree */
-		ltree_gist *key;
+	{							/* lpathtree */
+		lpathtree_gist *key;
 		ArrayType  *val = DatumGetArrayTypeP(entry->key);
 		int32		len = LTG_HDRSIZE + ASIGLEN;
 		int			num = ArrayGetNItems(ARR_NDIM(val), ARR_DIMS(val));
-		ltree	   *item = (ltree *) ARR_DATA_PTR(val);
+		lpathtree	   *item = (lpathtree *) ARR_DATA_PTR(val);
 
 		if (ARR_NDIM(val) > 1)
 			ereport(ERROR,
@@ -96,7 +96,7 @@ _ltree_compress(PG_FUNCTION_ARGS)
 					(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 					 errmsg("array must not contain nulls")));
 
-		key = (ltree_gist *) palloc(len);
+		key = (lpathtree_gist *) palloc(len);
 		SET_VARSIZE(key, len);
 		key->flag = 0;
 
@@ -117,7 +117,7 @@ _ltree_compress(PG_FUNCTION_ARGS)
 	{
 		int32		i,
 					len;
-		ltree_gist *key;
+		lpathtree_gist *key;
 
 		BITVECP		sign = LTG_SIGN(DatumGetPointer(entry->key));
 
@@ -127,7 +127,7 @@ _ltree_compress(PG_FUNCTION_ARGS)
 				PG_RETURN_POINTER(retval);
 		}
 		len = LTG_HDRSIZE;
-		key = (ltree_gist *) palloc(len);
+		key = (lpathtree_gist *) palloc(len);
 		SET_VARSIZE(key, len);
 		key->flag = LTG_ALLTRUE;
 
@@ -140,10 +140,10 @@ _ltree_compress(PG_FUNCTION_ARGS)
 }
 
 Datum
-_ltree_same(PG_FUNCTION_ARGS)
+_lpathtree_same(PG_FUNCTION_ARGS)
 {
-	ltree_gist *a = (ltree_gist *) PG_GETARG_POINTER(0);
-	ltree_gist *b = (ltree_gist *) PG_GETARG_POINTER(1);
+	lpathtree_gist *a = (lpathtree_gist *) PG_GETARG_POINTER(0);
+	lpathtree_gist *b = (lpathtree_gist *) PG_GETARG_POINTER(1);
 	bool	   *result = (bool *) PG_GETARG_POINTER(2);
 
 	if (LTG_ISALLTRUE(a) && LTG_ISALLTRUE(b))
@@ -172,7 +172,7 @@ _ltree_same(PG_FUNCTION_ARGS)
 }
 
 static int32
-unionkey(BITVECP sbase, ltree_gist *add)
+unionkey(BITVECP sbase, lpathtree_gist *add)
 {
 	int32		i;
 	BITVECP		sadd = LTG_SIGN(add);
@@ -186,7 +186,7 @@ unionkey(BITVECP sbase, ltree_gist *add)
 }
 
 Datum
-_ltree_union(PG_FUNCTION_ARGS)
+_lpathtree_union(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	int		   *size = (int *) PG_GETARG_POINTER(1);
@@ -194,7 +194,7 @@ _ltree_union(PG_FUNCTION_ARGS)
 	int32		i,
 				len;
 	int32		flag = 0;
-	ltree_gist *result;
+	lpathtree_gist *result;
 
 	MemSet((void *) base, 0, sizeof(ABITVEC));
 	for (i = 0; i < entryvec->n; i++)
@@ -207,7 +207,7 @@ _ltree_union(PG_FUNCTION_ARGS)
 	}
 
 	len = LTG_HDRSIZE + ((flag & LTG_ALLTRUE) ? 0 : ASIGLEN);
-	result = (ltree_gist *) palloc(len);
+	result = (lpathtree_gist *) palloc(len);
 	SET_VARSIZE(result, len);
 	result->flag = flag;
 	if (!LTG_ISALLTRUE(result))
@@ -244,7 +244,7 @@ hemdistsign(BITVECP a, BITVECP b)
 }
 
 static int
-hemdist(ltree_gist *a, ltree_gist *b)
+hemdist(lpathtree_gist *a, lpathtree_gist *b)
 {
 	if (LTG_ISALLTRUE(a))
 	{
@@ -261,10 +261,10 @@ hemdist(ltree_gist *a, ltree_gist *b)
 
 
 Datum
-_ltree_penalty(PG_FUNCTION_ARGS)
+_lpathtree_penalty(PG_FUNCTION_ARGS)
 {
-	ltree_gist *origval = (ltree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(0))->key);
-	ltree_gist *newval = (ltree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(1))->key);
+	lpathtree_gist *origval = (lpathtree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(0))->key);
+	lpathtree_gist *newval = (lpathtree_gist *) DatumGetPointer(((GISTENTRY *) PG_GETARG_POINTER(1))->key);
 	float	   *penalty = (float *) PG_GETARG_POINTER(2);
 
 	*penalty = hemdist(origval, newval);
@@ -284,13 +284,13 @@ comparecost(const void *a, const void *b)
 }
 
 Datum
-_ltree_picksplit(PG_FUNCTION_ARGS)
+_lpathtree_picksplit(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
 	OffsetNumber k,
 				j;
-	ltree_gist *datum_l,
+	lpathtree_gist *datum_l,
 			   *datum_r;
 	BITVECP		union_l,
 				union_r;
@@ -307,7 +307,7 @@ _ltree_picksplit(PG_FUNCTION_ARGS)
 	BITVECP		ptr;
 	int			i;
 	SPLITCOST  *costvector;
-	ltree_gist *_k,
+	lpathtree_gist *_k,
 			   *_j;
 
 	maxoff = entryvec->n - 2;
@@ -344,26 +344,26 @@ _ltree_picksplit(PG_FUNCTION_ARGS)
 	/* form initial .. */
 	if (LTG_ISALLTRUE(GETENTRY(entryvec, seed_1)))
 	{
-		datum_l = (ltree_gist *) palloc(LTG_HDRSIZE);
+		datum_l = (lpathtree_gist *) palloc(LTG_HDRSIZE);
 		SET_VARSIZE(datum_l, LTG_HDRSIZE);
 		datum_l->flag = LTG_ALLTRUE;
 	}
 	else
 	{
-		datum_l = (ltree_gist *) palloc(LTG_HDRSIZE + ASIGLEN);
+		datum_l = (lpathtree_gist *) palloc(LTG_HDRSIZE + ASIGLEN);
 		SET_VARSIZE(datum_l, LTG_HDRSIZE + ASIGLEN);
 		datum_l->flag = 0;
 		memcpy((void *) LTG_SIGN(datum_l), (void *) LTG_SIGN(GETENTRY(entryvec, seed_1)), sizeof(ABITVEC));
 	}
 	if (LTG_ISALLTRUE(GETENTRY(entryvec, seed_2)))
 	{
-		datum_r = (ltree_gist *) palloc(LTG_HDRSIZE);
+		datum_r = (lpathtree_gist *) palloc(LTG_HDRSIZE);
 		SET_VARSIZE(datum_r, LTG_HDRSIZE);
 		datum_r->flag = LTG_ALLTRUE;
 	}
 	else
 	{
-		datum_r = (ltree_gist *) palloc(LTG_HDRSIZE + ASIGLEN);
+		datum_r = (lpathtree_gist *) palloc(LTG_HDRSIZE + ASIGLEN);
 		SET_VARSIZE(datum_r, LTG_HDRSIZE + ASIGLEN);
 		datum_r->flag = 0;
 		memcpy((void *) LTG_SIGN(datum_r), (void *) LTG_SIGN(GETENTRY(entryvec, seed_2)), sizeof(ABITVEC));
@@ -447,9 +447,9 @@ _ltree_picksplit(PG_FUNCTION_ARGS)
 }
 
 static bool
-gist_te(ltree_gist *key, ltree *query)
+gist_te(lpathtree_gist *key, lpathtree *query)
 {
-	ltree_level *curq = LTREE_FIRST(query);
+	lpathtree_level *curq = LPATHTREE_FIRST(query);
 	BITVECP		sign = LTG_SIGN(key);
 	int			qlen = query->numlevel;
 	unsigned int hv;
@@ -459,7 +459,7 @@ gist_te(ltree_gist *key, ltree *query)
 
 	while (qlen > 0)
 	{
-		hv = ltree_crc32_sz(curq->name, curq->len);
+		hv = lpathtree_crc32_sz(curq->name, curq->len);
 		if (!GETBIT(sign, AHASHVAL(hv)))
 			return false;
 		curq = LEVEL_NEXT(curq);
@@ -476,22 +476,9 @@ checkcondition_bit(void *checkval, ITEM *val)
 }
 
 static bool
-gist_qtxt(ltree_gist *key, ltxtquery *query)
+gist_qe(lpathtree_gist *key, lpathquery *query)
 {
-	if (LTG_ISALLTRUE(key))
-		return true;
-
-	return ltree_execute(
-						 GETQUERY(query),
-						 (void *) LTG_SIGN(key), false,
-						 checkcondition_bit
-		);
-}
-
-static bool
-gist_qe(ltree_gist *key, lquery *query)
-{
-	lquery_level *curq = LQUERY_FIRST(query);
+	lpathquery_level *curq = LPATHQUERY_FIRST(query);
 	BITVECP		sign = LTG_SIGN(key);
 	int			qlen = query->numlevel;
 
@@ -504,7 +491,7 @@ gist_qe(ltree_gist *key, lquery *query)
 		{
 			bool		isexist = false;
 			int			vlen = curq->numvar;
-			lquery_variant *curv = LQL_FIRST(curq);
+			lpathquery_variant *curv = LQL_FIRST(curq);
 
 			while (vlen > 0)
 			{
@@ -528,9 +515,9 @@ gist_qe(ltree_gist *key, lquery *query)
 }
 
 static bool
-_arrq_cons(ltree_gist *key, ArrayType *_query)
+_arrq_cons(lpathtree_gist *key, ArrayType *_query)
 {
-	lquery	   *query = (lquery *) ARR_DATA_PTR(_query);
+	lpathquery  *query = (lpathquery *) ARR_DATA_PTR(_query);
 	int			num = ArrayGetNItems(ARR_NDIM(_query), ARR_DIMS(_query));
 
 	if (ARR_NDIM(_query) > 1)
@@ -547,13 +534,13 @@ _arrq_cons(ltree_gist *key, ArrayType *_query)
 		if (gist_qe(key, query))
 			return true;
 		num--;
-		query = (lquery *) NEXTVAL(query);
+		query = (lpathquery *) NEXTVAL(query);
 	}
 	return false;
 }
 
 Datum
-_ltree_consistent(PG_FUNCTION_ARGS)
+_lpathtree_consistent(PG_FUNCTION_ARGS)
 {
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	char	   *query = (char *) DatumGetPointer(PG_DETOAST_DATUM(PG_GETARG_DATUM(1)));
@@ -561,7 +548,7 @@ _ltree_consistent(PG_FUNCTION_ARGS)
 
 	/* Oid		subtype = PG_GETARG_OID(3); */
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
-	ltree_gist *key = (ltree_gist *) DatumGetPointer(entry->key);
+	lpathtree_gist *key = (lpathtree_gist *) DatumGetPointer(entry->key);
 	bool		res = false;
 
 	/* All cases served by this function are inexact */
@@ -571,18 +558,14 @@ _ltree_consistent(PG_FUNCTION_ARGS)
 	{
 		case 10:
 		case 11:
-			res = gist_te(key, (ltree *) query);
+			res = gist_te(key, (lpathtree *) query);
 			break;
 		case 12:
 		case 13:
-			res = gist_qe(key, (lquery *) query);
+			res = gist_qe(key, (lpathquery *) query);
 			break;
 		case 14:
 		case 15:
-			res = gist_qtxt(key, (ltxtquery *) query);
-			break;
-		case 16:
-		case 17:
 			res = _arrq_cons(key, (ArrayType *) query);
 			break;
 		default:

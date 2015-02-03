@@ -1,13 +1,13 @@
 /*
- * txtquery operations with ltree
+ * txtquery operations with lpathtree
  * Teodor Sigaev <teodor@stack.net>
- * contrib/ltree/ltxtquery_op.c
+ * contrib/lpathtree/ltxtquery_op.c
  */
 #include "postgres.h"
 
 #include <ctype.h>
 
-#include "ltree.h"
+#include "lpathtree.h"
 
 PG_FUNCTION_INFO_V1(ltxtq_exec);
 PG_FUNCTION_INFO_V1(ltxtq_rexec);
@@ -16,47 +16,47 @@ PG_FUNCTION_INFO_V1(ltxtq_rexec);
  * check for boolean condition
  */
 bool
-ltree_execute(ITEM *curitem, void *checkval, bool calcnot, bool (*chkcond) (void *checkval, ITEM *val))
+lpathtree_execute(ITEM *curitem, void *checkval, bool calcnot, bool (*chkcond) (void *checkval, ITEM *val))
 {
 	if (curitem->type == VAL)
 		return (*chkcond) (checkval, curitem);
 	else if (curitem->val == (int32) '!')
 	{
 		return (calcnot) ?
-			((ltree_execute(curitem + 1, checkval, calcnot, chkcond)) ? false : true)
+			((lpathtree_execute(curitem + 1, checkval, calcnot, chkcond)) ? false : true)
 			: true;
 	}
 	else if (curitem->val == (int32) '&')
 	{
-		if (ltree_execute(curitem + curitem->left, checkval, calcnot, chkcond))
-			return ltree_execute(curitem + 1, checkval, calcnot, chkcond);
+		if (lpathtree_execute(curitem + curitem->left, checkval, calcnot, chkcond))
+			return lpathtree_execute(curitem + 1, checkval, calcnot, chkcond);
 		else
 			return false;
 	}
 	else
 	{							/* |-operator */
-		if (ltree_execute(curitem + curitem->left, checkval, calcnot, chkcond))
+		if (lpathtree_execute(curitem + curitem->left, checkval, calcnot, chkcond))
 			return true;
 		else
-			return ltree_execute(curitem + 1, checkval, calcnot, chkcond);
+			return lpathtree_execute(curitem + 1, checkval, calcnot, chkcond);
 	}
 }
 
 typedef struct
 {
-	ltree	   *node;
+	lpathtree	   *node;
 	char	   *operand;
 } CHKVAL;
 
 static bool
 checkcondition_str(void *checkval, ITEM *val)
 {
-	ltree_level *level = LTREE_FIRST(((CHKVAL *) checkval)->node);
+	lpathtree_level *level = LPATHTREE_FIRST(((CHKVAL *) checkval)->node);
 	int			tlen = ((CHKVAL *) checkval)->node->numlevel;
 	char	   *op = ((CHKVAL *) checkval)->operand + val->distance;
 	int			(*cmpptr) (const char *, const char *, size_t);
 
-	cmpptr = (val->flag & LVAR_INCASE) ? ltree_strncasecmp : strncmp;
+	cmpptr = (val->flag & LVAR_INCASE) ? lpathtree_strncasecmp : strncmp;
 	while (tlen > 0)
 	{
 		if (val->flag & LVAR_SUBLEXEME)
@@ -82,7 +82,7 @@ checkcondition_str(void *checkval, ITEM *val)
 Datum
 ltxtq_exec(PG_FUNCTION_ARGS)
 {
-	ltree	   *val = PG_GETARG_LTREE(0);
+	lpathtree	   *val = PG_GETARG_lpathtree(0);
 	ltxtquery  *query = PG_GETARG_LTXTQUERY(1);
 	CHKVAL		chkval;
 	bool		result;
@@ -90,7 +90,7 @@ ltxtq_exec(PG_FUNCTION_ARGS)
 	chkval.node = val;
 	chkval.operand = GETOPERAND(query);
 
-	result = ltree_execute(
+	result = lpathtree_execute(
 						   GETQUERY(query),
 						   &chkval,
 						   true,
