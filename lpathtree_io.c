@@ -26,8 +26,8 @@ Datum		lquery_out(PG_FUNCTION_ARGS);
 
 #define UNCHAR ereport(ERROR, \
 					   (errcode(ERRCODE_SYNTAX_ERROR), \
-						errmsg("syntax error at position %d", \
-						pos)));
+						errmsg("syntax error at position %d: '%c'", \
+						pos, TOUCHAR(ptr))));
 
 
 typedef struct
@@ -60,7 +60,7 @@ ltree_in(PG_FUNCTION_ARGS)
 	while (*ptr)
 	{
 		charlen = pg_mblen(ptr);
-		if (charlen == 1 && t_iseq(ptr, '.'))
+		if (charlen == 1 && t_iseq(ptr, NODE_DELIMITER_CHAR))
 			num++;
 		ptr += charlen;
 	}
@@ -78,7 +78,7 @@ ltree_in(PG_FUNCTION_ARGS)
 
 		if (state == LTPRS_WAITNAME)
 		{
-			if (ISALNUM(ptr))
+			if (ISALLOWEDCHAR(ptr))
 			{
 				lptr->start = ptr;
 				lptr->wlen = 0;
@@ -89,7 +89,7 @@ ltree_in(PG_FUNCTION_ARGS)
 		}
 		else if (state == LTPRS_WAITDELIM)
 		{
-			if (charlen == 1 && t_iseq(ptr, '.'))
+			if (charlen == 1 && t_iseq(ptr, NODE_DELIMITER_CHAR))
 			{
 				lptr->len = ptr - lptr->start;
 				if (lptr->wlen > 255)
@@ -104,7 +104,7 @@ ltree_in(PG_FUNCTION_ARGS)
 				lptr++;
 				state = LTPRS_WAITNAME;
 			}
-			else if (!ISALNUM(ptr))
+			else if (!ISALLOWEDCHAR(ptr))
 				UNCHAR;
 		}
 		else
@@ -168,7 +168,7 @@ ltree_out(PG_FUNCTION_ARGS)
 	{
 		if (i != 0)
 		{
-			*ptr = '.';
+			*ptr = NODE_DELIMITER_CHAR;
 			ptr++;
 		}
 		memcpy(ptr, curlevel->name, curlevel->len);
@@ -224,7 +224,7 @@ lquery_in(PG_FUNCTION_ARGS)
 
 		if (charlen == 1)
 		{
-			if (t_iseq(ptr, '.'))
+			if (t_iseq(ptr, NODE_DELIMITER_CHAR))
 				num++;
 			else if (t_iseq(ptr, '|'))
 				numOR++;
@@ -319,7 +319,7 @@ lquery_in(PG_FUNCTION_ARGS)
 
 				state = LQPRS_WAITVAR;
 			}
-			else if (charlen == 1 && t_iseq(ptr, '.'))
+			else if (charlen == 1 && t_iseq(ptr, NODE_DELIMITER_CHAR))
 			{
 				lptr->len = ptr - lptr->start -
 					((lptr->flag & LVAR_SUBLEXEME) ? 1 : 0) -
@@ -348,7 +348,7 @@ lquery_in(PG_FUNCTION_ARGS)
 		{
 			if (charlen == 1 && t_iseq(ptr, '{'))
 				state = LQPRS_WAITFNUM;
-			else if (charlen == 1 && t_iseq(ptr, '.'))
+			else if (charlen == 1 && t_iseq(ptr, NODE_DELIMITER_CHAR))
 			{
 				curqlevel->low = 0;
 				curqlevel->high = 0xffff;
@@ -406,7 +406,7 @@ lquery_in(PG_FUNCTION_ARGS)
 		}
 		else if (state == LQPRS_WAITEND)
 		{
-			if (charlen == 1 && t_iseq(ptr, '.'))
+			if (charlen == 1 && t_iseq(ptr, NODE_DELIMITER_CHAR))
 			{
 				state = LQPRS_WAITLEVEL;
 				curqlevel = NEXTLEV(curqlevel);
@@ -554,7 +554,7 @@ lquery_out(PG_FUNCTION_ARGS)
 	{
 		if (i != 0)
 		{
-			*ptr = '.';
+			*ptr = NODE_DELIMITER_CHAR;
 			ptr++;
 		}
 		if (curqlevel->numvar)

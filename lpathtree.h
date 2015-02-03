@@ -7,6 +7,8 @@
 #include "tsearch/ts_locale.h"
 #include "utils/memutils.h"
 
+#define NODE_DELIMITER_CHAR '/'
+
 typedef struct
 {
 	uint16		len;
@@ -81,7 +83,7 @@ typedef struct
 #define LQUERY_HASNOT		0x01
 
 #define ISALNUM(x)	( t_isalpha(x) || t_isdigit(x)	|| ( pg_mblen(x) == 1 && t_iseq((x), '_') ) )
-
+#define ISALLOWEDCHAR(x)	( t_isprint(x) && ! ( pg_mblen(x) == 1 && t_iseq((x), NODE_DELIMITER_CHAR) ) )
 /* full text query */
 
 /*
