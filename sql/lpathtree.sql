@@ -1,5 +1,12 @@
-\cd /linux11/github/yapus/mmp/src_dir/redist/lpathtree
-CREATE EXTENSION lpathtree;
+--
+-- first, define the datatype.  Turn off echoing so that expected file
+-- does not depend on contents of ltree.sql.
+--
+SET client_min_messages = warning;
+\set ECHO none
+\i ltree.sql
+\set ECHO all
+RESET client_min_messages;
 
 SELECT ''::lpathtree;
 SELECT '1'::lpathtree;

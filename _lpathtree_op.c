@@ -9,6 +9,7 @@
 
 #include <ctype.h>
 
+#include "utils/array.h"
 #include "lpathtree.h"
 
 PG_FUNCTION_INFO_V1(_lpathtree_isparent);
@@ -259,7 +260,7 @@ _lca(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_ARRAY_SUBSCRIPT_ERROR),
 				 errmsg("array must be one-dimensional")));
-	if (array_contains_nulls(la))
+	if (ARR_HASNULL(la))
 		ereport(ERROR,
 				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("array must not contain nulls")));

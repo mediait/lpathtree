@@ -1,7 +1,7 @@
-/* contrib/lpathtree/lpathtree--1.0.sql */
+/* $PostgreSQL: contrib/lpathtree/lpathtree.sql.in */
 
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "CREATE EXTENSION lpathtree" to load this file. \quit
+-- Adjust this setting to control where the objects get created.
+SET search_path = public;
 
 CREATE FUNCTION lpathtree_in(cstring)
 RETURNS lpathtree
