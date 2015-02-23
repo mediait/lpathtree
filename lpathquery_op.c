@@ -7,7 +7,7 @@
 
 #include <ctype.h>
 
-#include "catalog/pg_collation.h"
+#include "utils/array.h"
 #include "utils/formatting.h"
 #include "lpathtree.h"
 
@@ -90,8 +90,8 @@ bool
 int
 lpathtree_strncasecmp(const char *a, const char *b, size_t s)
 {
-	char	   *al = str_tolower(a, s, DEFAULT_COLLATION_OID);
-	char	   *bl = str_tolower(b, s, DEFAULT_COLLATION_OID);
+	char	   *al = str_tolower(a, s);
+	char	   *bl = str_tolower(b, s);
 	int			res;
 
 	res = strncmp(al, bl, s);
@@ -348,7 +348,7 @@ lt_q_regex(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_ARRAY_SUBSCRIPT_ERROR),
 				 errmsg("array must be one-dimensional")));
-	if (array_contains_nulls(_query))
+	if (ARR_HASNULL(_query))
 		ereport(ERROR,
 				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("array must not contain nulls")));

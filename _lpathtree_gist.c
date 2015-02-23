@@ -9,6 +9,7 @@
 
 #include "access/gist.h"
 #include "access/skey.h"
+#include "utils/array.h"
 #include "crc32.h"
 #include "lpathtree.h"
 
@@ -91,7 +92,7 @@ _lpathtree_compress(PG_FUNCTION_ARGS)
 			ereport(ERROR,
 					(errcode(ERRCODE_ARRAY_SUBSCRIPT_ERROR),
 					 errmsg("array must be one-dimensional")));
-		if (array_contains_nulls(val))
+		if (ARR_HASNULL(val))
 			ereport(ERROR,
 					(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 					 errmsg("array must not contain nulls")));
@@ -470,12 +471,6 @@ gist_te(lpathtree_gist *key, lpathtree *query)
 }
 
 static bool
-checkcondition_bit(void *checkval, ITEM *val)
-{
-	return (FLG_CANLOOKSIGN(val->flag)) ? GETBIT(checkval, AHASHVAL(val->val)) : true;
-}
-
-static bool
 gist_qe(lpathtree_gist *key, lpathquery *query)
 {
 	lpathquery_level *curq = LPATHQUERY_FIRST(query);
@@ -524,7 +519,7 @@ _arrq_cons(lpathtree_gist *key, ArrayType *_query)
 		ereport(ERROR,
 				(errcode(ERRCODE_ARRAY_SUBSCRIPT_ERROR),
 				 errmsg("array must be one-dimensional")));
-	if (array_contains_nulls(_query))
+	if (ARR_HASNULL(_query))
 		ereport(ERROR,
 				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("array must not contain nulls")));

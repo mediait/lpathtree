@@ -1,14 +1,12 @@
 # contrib/lpathtree/Makefile
 
+PG_CPPFLAGS = -DLOWER_NODE
 MODULE_big = lpathtree
 OBJS = 	lpathtree_io.o lpathtree_op.o lpathquery_op.o _lpathtree_op.o crc32.o \
 	lpathtree_gist.o _lpathtree_gist.o
-PG_CPPFLAGS = -DLOWER_NODE
-
-EXTENSION = lpathtree
 DATA = lpathtree--1.0.sql lpathtree--unpackaged--1.0.sql
-
 REGRESS = lpathtree
+EXTENSION = lpathtree
 
 ifdef USE_PGXS
 PG_CONFIG = pg_config

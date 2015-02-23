@@ -3,6 +3,7 @@
 #ifndef __lpathtree_H__
 #define __lpathtree_H__
 
+#include "postgres.h"
 #include "fmgr.h"
 #include "tsearch/ts_locale.h"
 #include "utils/memutils.h"

@@ -6,7 +6,9 @@
 #include "postgres.h"
 
 #include "access/gist.h"
+#include "access/nbtree.h"
 #include "access/skey.h"
+#include "utils/array.h"
 #include "crc32.h"
 #include "lpathtree.h"
 
@@ -576,12 +578,6 @@ gist_between(lpathtree_gist *key, lpathquery *query)
 }
 
 static bool
-checkcondition_bit(void *checkval, ITEM *val)
-{
-	return (FLG_CANLOOKSIGN(val->flag)) ? GETBIT(checkval, HASHVAL(val->val)) : true;
-}
-
-static bool
 arrq_cons(lpathtree_gist *key, ArrayType *_query)
 {
 	lpathquery	*query = (lpathquery *) ARR_DATA_PTR(_query);
@@ -591,7 +587,7 @@ arrq_cons(lpathtree_gist *key, ArrayType *_query)
 		ereport(ERROR,
 				(errcode(ERRCODE_ARRAY_SUBSCRIPT_ERROR),
 				 errmsg("array must be one-dimensional")));
-	if (array_contains_nulls(_query))
+	if (ARR_HASNULL(_query))
 		ereport(ERROR,
 				(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
 				 errmsg("array must not contain nulls")));
