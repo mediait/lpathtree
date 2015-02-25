@@ -534,16 +534,13 @@ lpathtree2text(PG_FUNCTION_ARGS)
 	lpathtree_level *curlevel;
 	text	   *out;
 
-	out = (text *) palloc(VARSIZE(in) + VARHDRSZ);
+	out = (text *) palloc(1 + VARSIZE(in) + VARHDRSZ);
 	ptr = VARDATA(out);
 	curlevel = LPATHTREE_FIRST(in);
 	for (i = 0; i < in->numlevel; i++)
 	{
-		if (i != 0)
-		{
-			*ptr = '.';
-			ptr++;
-		}
+		*ptr = NODE_DELIMITER_CHAR;
+		ptr++;
 		memcpy(ptr, curlevel->name, curlevel->len);
 		ptr += curlevel->len;
 		curlevel = LEVEL_NEXT(curlevel);
