@@ -164,15 +164,12 @@ lpathtree_out(PG_FUNCTION_ARGS)
 	int			i;
 	lpathtree_level *curlevel;
 
-	ptr = buf = (char *) palloc(VARSIZE(in));
+	ptr = buf = (char *) palloc(VARSIZE(in) + 1);
 	curlevel = LPATHTREE_FIRST(in);
 	for (i = 0; i < in->numlevel; i++)
 	{
-		if (i != 0)
-		{
-			*ptr = NODE_DELIMITER_CHAR;
-			ptr++;
-		}
+		*ptr = NODE_DELIMITER_CHAR;
+		ptr++;
 		memcpy(ptr, curlevel->name, curlevel->len);
 		ptr += curlevel->len;
 		curlevel = LEVEL_NEXT(curlevel);
