@@ -23,6 +23,13 @@ Datum		lpathquery_in(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(lpathquery_out);
 Datum		lpathquery_out(PG_FUNCTION_ARGS);
 
+#define ISQUERYALLOWEDCHAR(x)	( t_isprint(x) && ! ( pg_mblen(x) == 1 && t_iseq((x), NODE_DELIMITER_CHAR) ) \
+                                               && ! ( pg_mblen(x) == 1 && t_iseq((x), '!') ) \
+                                               && ! ( pg_mblen(x) == 1 && t_iseq((x), '*') ) \
+                                               && ! ( pg_mblen(x) == 1 && t_iseq((x), '@') ) \
+                                               && ! ( pg_mblen(x) == 1 && t_iseq((x), '%') ) \
+                                               && ! ( pg_mblen(x) == 1 && t_iseq((x), '|') ) \
+								)
 
 #define UNCHAR ereport(ERROR, \
 					   (errcode(ERRCODE_SYNTAX_ERROR), \
@@ -246,7 +253,7 @@ lpathquery_in(PG_FUNCTION_ARGS)
 
 		if (state == LQPRS_WAITLEVEL)
 		{
-			if (ISALNUM(ptr))
+			if (ISQUERYALLOWEDCHAR(ptr))
 			{
 				GETVAR(curqlevel) = lptr = (nodeitem *) palloc0(sizeof(nodeitem) * (numOR + 1));
 				lptr->start = ptr;
@@ -269,7 +276,7 @@ lpathquery_in(PG_FUNCTION_ARGS)
 		}
 		else if (state == LQPRS_WAITVAR)
 		{
-			if (ISALNUM(ptr))
+			if (ISQUERYALLOWEDCHAR(ptr))
 			{
 				lptr++;
 				lptr->start = ptr;
@@ -335,7 +342,7 @@ lpathquery_in(PG_FUNCTION_ARGS)
 				state = LQPRS_WAITLEVEL;
 				curqlevel = NEXTLEV(curqlevel);
 			}
-			else if (ISALNUM(ptr))
+			else if (ISQUERYALLOWEDCHAR(ptr))
 			{
 				if (lptr->flag)
 					UNCHAR;
