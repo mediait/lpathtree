@@ -12,16 +12,9 @@
 #include "crc32.h"
 
 PG_FUNCTION_INFO_V1(lpathtree_in);
-Datum		lpathtree_in(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_out);
-Datum		lpathtree_out(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathquery_in);
-Datum		lpathquery_in(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathquery_out);
-Datum		lpathquery_out(PG_FUNCTION_ARGS);
 
 #define ISQUERYALLOWEDCHAR(x)	( t_isprint(x) && ! ( pg_mblen(x) == 1 && t_iseq((x), NODE_DELIMITER_CHAR) ) \
                                                && ! ( pg_mblen(x) == 1 && t_iseq((x), '!') ) \

@@ -20,18 +20,11 @@ PG_FUNCTION_INFO_V1(_ltq_rregex);
 PG_FUNCTION_INFO_V1(_lt_q_regex);
 PG_FUNCTION_INFO_V1(_lt_q_rregex);
 
-Datum		_lpathtree_r_isparent(PG_FUNCTION_ARGS);
-Datum		_lpathtree_r_risparent(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(_lpathtree_extract_isparent);
 PG_FUNCTION_INFO_V1(_lpathtree_extract_risparent);
 PG_FUNCTION_INFO_V1(_ltq_extract_regex);
-Datum		_lpathtree_extract_isparent(PG_FUNCTION_ARGS);
-Datum		_lpathtree_extract_risparent(PG_FUNCTION_ARGS);
-Datum		_ltq_extract_regex(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(_lca);
-Datum		_lca(PG_FUNCTION_ARGS);
 
 typedef Datum (*PGCALL2) (PG_FUNCTION_ARGS);
 
