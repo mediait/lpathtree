@@ -1,4 +1,3 @@
-\cd /linux11/github/yapus/mmp/src_dir/redist/lpathtree
 CREATE EXTENSION lpathtree;
 
 SELECT ''::lpathtree;
