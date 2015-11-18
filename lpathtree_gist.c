@@ -14,7 +14,6 @@
 
 PG_FUNCTION_INFO_V1(lpathtree_gist_in);
 Datum		lpathtree_gist_in(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_gist_out);
 Datum		lpathtree_gist_out(PG_FUNCTION_ARGS);
 
@@ -38,22 +37,17 @@ lpathtree_gist_out(PG_FUNCTION_ARGS)
 
 PG_FUNCTION_INFO_V1(lpathtree_compress);
 Datum		lpathtree_compress(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_decompress);
 Datum		lpathtree_decompress(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_same);
 Datum		lpathtree_same(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_union);
 Datum		lpathtree_union(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_penalty);
 Datum		lpathtree_penalty(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(lpathtree_picksplit);
 Datum		lpathtree_picksplit(PG_FUNCTION_ARGS);
-
 PG_FUNCTION_INFO_V1(lpathtree_consistent);
 Datum		lpathtree_consistent(PG_FUNCTION_ARGS);
 
@@ -573,12 +567,6 @@ gist_between(lpathtree_gist *key, lpathquery *query)
 		return false;
 
 	return true;
-}
-
-static bool
-checkcondition_bit(void *checkval, ITEM *val)
-{
-	return (FLG_CANLOOKSIGN(val->flag)) ? GETBIT(checkval, HASHVAL(val->val)) : true;
 }
 
 static bool
